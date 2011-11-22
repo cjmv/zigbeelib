@@ -12,7 +12,10 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
+					<Add option="-pedantic" />
+					<Add option="-Wall" />
 					<Add option="-g" />
+					<Add directory="/home/cjmv/Projects/ZigBee/ZigBeeLib/trunk/source/trunk/APICpp/include/" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -31,8 +34,19 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="include/API_AT_Command.h" />
+		<Unit filename="include/API_AT_CommandResponse.h" />
+		<Unit filename="include/API_AT_RemoteCommand.h" />
+		<Unit filename="include/API_AT_RemoteCommandResponse.h" />
 		<Unit filename="include/API_Frame.h" />
+		<Unit filename="src/API_AT_Command.cpp" />
+		<Unit filename="src/API_AT_CommandResponse.cpp" />
+		<Unit filename="src/API_AT_RemoteCommand.cpp" />
+		<Unit filename="src/API_AT_RemoteCommandResponse.cpp" />
 		<Unit filename="src/API_Frame.cpp" />
+		<Unit filename="../controllerTest.cpp">
+			<Option target="Debug" />
+		</Unit>
 		<Extensions>
 			<envvars />
 			<code_completion />
