@@ -13,16 +13,67 @@
 #ifndef API_FRAME_H
 #define API_FRAME_H
 
-#include <string>
+//#define START_DELIMITER 0x7E
 
+#include <string>
 
 class API_Frame
 {
     public:
 
+
+        /** API Frame type enumeration for all known (for the time being) messages.
+         * \note For the sake of documentation, maybe I should include a small description for each message.
+         */
+         enum FrameType {
+             AT_COMMAND = 0x08,
+             AT_COMMAND_QUEUED = 0x09,
+             TX_REQUEST = 0x10,
+             EADDRESS_TX_REQUEST = 0x11,
+             AT_REMOTE_COMMAND = 0x17,
+             CREATE_SRC_ROUTE = 0x21,
+             AT_COMMAND_RESPONSE = 0x88,
+             MODEM_STATUS = 0x8A,
+             TX_STATUS = 0x8B,
+             RX_PACKET = 0x90,
+             EADDRESS_RX_PACKET = 0x91,
+             IO_RX_SAMPLE = 0x92,
+             SENSOR_READ = 0x94, // From Digi 1-wire sensor adapter.
+             NODE_IDENT = 0x95, // see ND command.
+             AT_REMOTE_RESPONSE = 0X97,
+             OTA_FIRM_UPDATE = 0xA0,
+             ROUTE_RECORD = 0xA1,
+             MTO_ROUTE_REQUEST = 0xA3
+        };
+
+        /** Default constructor */
         API_Frame();
-        virtual ~API_Frame();
+
+        /** Copy constructor
+         *  \param other Object to copy from
+         */
         API_Frame(const API_Frame& other);
+
+        /** Constructor to initialise an API Frame (through its children), holding common items to all frame types.
+         * \param length An unsigned integer holding the length for this API Frame.
+         * \param framType A FrameType enumerated value holding the Frame type for this API message.
+         */
+        API_Frame(unsigned int length, FrameType frameType);
+
+        /** Constructor to initialise an API Frame (through its children), holding common items to all frame types.
+         * \param length An unsigned integer holding the length for this API Frame.
+         * \param framType A FrameType enumerated value holding the Frame type for this API message.
+         * \param checksum An unsigned char holding the value of the calculated checksum
+         */
+        API_Frame(unsigned int length, FrameType frameType, unsigned char checksum);
+
+        /** Default destructor */
+        virtual ~API_Frame();
+
+        /** Assignment operator
+         *  \param other Object to assign from
+         *  \return A reference to this
+         */
         API_Frame& operator=(const API_Frame& other);
 
         ///
@@ -58,18 +109,16 @@ class API_Frame
 
         ///
         /// Get method for the ZigBee standart API Frame Type.
-        ///@return Returns the ZigBee standart API frame type.
-        ///@note It's probably best if this attribute is actually an enum type that converted into hex value whenever necessary.
+        ///@return Returns FrameType enumerated value holding the ZigBee standart API frame type.
         ///
-        inline unsigned char getFrameType() {
+        inline FrameType getFrameType() {
             return frameType_;
         }
         ///
         /// Set method for the ZigBee standart API Frame Type.
-        ///@param frameType An unsigned char holding the standart ZigBee API frame type value to be taken.
-        ///@note It's probably best if this attribute is actually an enum type that converted into hex value whenever necessary.
+        ///@param frameType A FrameType enumerated value holding the standart ZigBee API frame type to be set.
         ///
-        inline void setFrameType(unsigned char frameType) {
+        inline void setFrameType(FrameType frameType) {
             frameType_ = frameType;
         }
 
@@ -110,7 +159,7 @@ class API_Frame
 
         unsigned char startDelimiter_; /// Unsigned char to hold the standart ZigBee API Frame start delimiter.
         unsigned int length_; /// Unsigned integer to hold the API Frame length.
-        unsigned char frameType_; /// Unsigned char to hold the standart ZigBee API Frame type.
+        FrameType frameType_; /// FrameType enum to hold the standart ZigBee API Frame type.
         unsigned char checksum_; /// Unsigned char to hold the checksum for the current API Frame.
                                  ///@sa calculateChecksum
 

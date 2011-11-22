@@ -16,20 +16,22 @@
 #include <fstream>
 #include <vector>
 
+#include "API_AT_CommandResponse.h"
+
 using namespace std;
 
 double voltage_divider(vector<int>& imp_elements, int grounded_element, double Vin, double Vout)
 {
 	int aux = 0;
-		
+
 	for (unsigned int i = 0; i < imp_elements.size(); i++){
-			
+
 		aux += imp_elements[i];
 	}
 
 	if (Vout == 0.0)
 		return ((double)grounded_element * Vin) / (double)aux;
-	
+
 	else if (Vin == 0.0)
 		return ((double)aux * Vout) / (double)grounded_element;
 
@@ -55,9 +57,9 @@ double kelvin2Celsius(double kelvinDeg)
 void getTemperatureCelsius(int hexAD)
 {
 	double ADmV = 0.0, kelvin_deg = 0.0, celcius_deg = 0.0;
-	
+
 	cout << "AD in HEX: " << hex << hexAD << dec << endl;
-	ADmV = AD_output_to_mV(hexAD); 
+	ADmV = AD_output_to_mV(hexAD);
 	cout << "AD(mV): " << ADmV << "mV" << endl;
 	ADmV *= (double)3.0;
 	cout << "AD(mV) w/t VD: " << ADmV << "mV" << endl;
@@ -65,9 +67,9 @@ void getTemperatureCelsius(int hexAD)
 	cout << "Temperature (Kelvin): " << kelvin_deg << " Kelvin" << endl;
 	celcius_deg = kelvin2Celsius(kelvin_deg);
 	cout << "Temperature (Celcius): " << celcius_deg << "ºC" << endl;
-	
+
 }
- 
+
 int main(int argc,char** argv)
 {
 
@@ -77,9 +79,9 @@ int main(int argc,char** argv)
         int serial_fd;
 	int nBytes = 0;
 	bool found_init = false;
- 
+
 	//bzero(&tio, sizeof(tio));
- 
+
         /*memset(&tio,0,sizeof(tio));
         tio.c_iflag=ICRNL;
         tio.c_oflag=OCRNL;
@@ -94,7 +96,7 @@ int main(int argc,char** argv)
         //tio.c_lflag=0;
         /*tio.c_cc[VMIN]=1;
         tio.c_cc[VTIME]=5;*/
- 
+
 	cfmakeraw(&tio);
         cfsetospeed(&tio,B9600);            // 9600 baud
         cfsetispeed(&tio,B9600);            // 9600 baud
@@ -102,22 +104,22 @@ int main(int argc,char** argv)
         serial_fd=open("/dev/ttyUSB0", O_RDWR);
 
 	if (serial_fd < 0){
-	
+
 		cout << "Error while opening device..." << endl;
 		exit(1);
-	}      
- 
+	}
+
         tcsetattr(serial_fd,TCSANOW,&tio);
         //tcsetattr(serial_fd,TCSADRAIN,&tio);
 
 
-	buff[0] = 0x7E;	
-	buff[1] = 0x00;	
-	buff[2] = 0x04;	
-	buff[3] = 0x08;	
-	buff[4] = 0x01;	
-	buff[5] = 0x49;	
-	buff[6] = 0x44;	
+	buff[0] = 0x7E;
+	buff[1] = 0x00;
+	buff[2] = 0x04;
+	buff[3] = 0x08;
+	buff[4] = 0x01;
+	buff[5] = 0x49;
+	buff[6] = 0x44;
 	buff[7] = 0x69;
 	buff[8] = '\n';
 
@@ -133,7 +135,7 @@ int main(int argc,char** argv)
 	for (unsigned int i = 0; i < sizeof(buff); i++)
 	{
 		buff[i] = '\0';
-	}		
+	}
 
 
 	cout << "Wating for response..." << endl;
@@ -146,7 +148,7 @@ int main(int argc,char** argv)
 			for(int i = 0; i < nBytes; i++)
 			{
 				if(buff[i] == 0x7E && !found_init){
-				
+
 					found_init = true;
 
 					message += buff[i];
@@ -167,7 +169,7 @@ int main(int argc,char** argv)
 					cout << dec << endl;
 
 					cout << "Processing Message:" << endl << "TYPE:\t";
-					
+
 					switch((unsigned char)message[3]){
 
 						case 0x88:
@@ -186,7 +188,7 @@ int main(int argc,char** argv)
 							//Vlm335A = AD_output_to_mV((int)((unsigned char)message[19]*0x100 + (unsigned char)message[20])) * 3.0;
 
 							//cout << "Temperature: " << kelvin2Celsius(get_lm335A_Sensor_KelvinValue(AD_output_to_mV((int)((unsigned char)message[19]*0x100 + (unsigned char)message[20])) * 3.0)) << endl;
-							
+
 							break;
 						default:
 							cout << "Unknown message type!" << endl;
@@ -196,7 +198,7 @@ int main(int argc,char** argv)
 					message += buff[i];
 
 					//cout << hex << (int)buff[i] << " ";
-					
+
 				}
 			}
 		}
@@ -204,8 +206,8 @@ int main(int argc,char** argv)
 			cout << "Error while reading from serial port!" << endl;
 			exit(1);
 		}
-		
+
         }
- 
+
         close(serial_fd);
 }
