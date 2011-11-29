@@ -34,19 +34,30 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Linker>
+			<Add library="pthread" />
+		</Linker>
 		<Unit filename="include/API_AT_Command.h" />
 		<Unit filename="include/API_AT_CommandResponse.h" />
 		<Unit filename="include/API_AT_RemoteCommand.h" />
 		<Unit filename="include/API_AT_RemoteCommandResponse.h" />
 		<Unit filename="include/API_Frame.h" />
+		<Unit filename="include/API_IO_Sample.h" />
+		<Unit filename="include/API_Receive_Packet.h" />
+		<Unit filename="include/Thread.h" />
+		<Unit filename="include/ZB_MonitoringAndControl.h" />
+		<Unit filename="main.cpp">
+			<Option target="Debug" />
+		</Unit>
 		<Unit filename="src/API_AT_Command.cpp" />
 		<Unit filename="src/API_AT_CommandResponse.cpp" />
 		<Unit filename="src/API_AT_RemoteCommand.cpp" />
 		<Unit filename="src/API_AT_RemoteCommandResponse.cpp" />
 		<Unit filename="src/API_Frame.cpp" />
-		<Unit filename="../controllerTest.cpp">
-			<Option target="Debug" />
-		</Unit>
+		<Unit filename="src/API_IO_Sample.cpp" />
+		<Unit filename="src/API_Receive_Packet.cpp" />
+		<Unit filename="src/Thread.cpp" />
+		<Unit filename="src/ZB_MonitoringAndControl.cpp" />
 		<Extensions>
 			<envvars />
 			<code_completion />
