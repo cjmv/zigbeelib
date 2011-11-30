@@ -107,8 +107,10 @@ class API_AT_Command : public API_Frame
         /// To verify checksum: Add all bytes (include checksum, but not the delimiter and length bytes).
         /// If the checksum is correct, the sum will equal 0xFF.
         ///@param frame String holding an entire API frame (from start delimiter to checksum).
+        ///@return Returns a boolean value. "true" if frame was successfuly parse and false if otherwise.
+        ///@note One of the reasons for the frame not being successfuly parse is if the checksum isn't valid.
         ///
-        virtual void parseFrame(std::string frame);
+        virtual bool parseFrame(std::string frame);
 
     protected:
 
