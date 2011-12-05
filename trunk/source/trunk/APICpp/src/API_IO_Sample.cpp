@@ -118,24 +118,16 @@ bool API_IO_Sample::parseFrame(string frame)
 
             if((masked & (1 << shift)) != 0){
 
-                analogSamples_.push_back(make_pair(shift, frame.substr(21+(numberOfSensors*2), 16)));
+                if(digitalSamples_.size() > 0)
+                    analogSamples_.push_back(make_pair(shift, frame.substr(21+(numberOfSensors*2), 2)));
+                else
+                    analogSamples_.push_back(make_pair(shift, frame.substr(19+(numberOfSensors*2), 2)));
+
                 numberOfSensors++;
             }
 
             shift++;
         }
-
-        // If using multiple sensors for the same XBee, it might be good ideia to make
-        // analogSamples_ a vector of strings to hold already each sensor sample separated.
-        /*while(numberOfSensors > 0){
-
-            analogSamples.push_back()
-        }*/
-        //analogSamples_ = frame.substr(21, numberOfSensors*2);
-
-
-        //if(digitalChannelMask_ > 0)
-
     }
 
     // Check checksum validity
