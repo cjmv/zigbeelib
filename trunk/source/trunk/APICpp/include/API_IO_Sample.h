@@ -17,6 +17,9 @@
 #ifndef API_IO_SAMPLE_H
 #define API_IO_SAMPLE_H
 
+#include <vector>
+#include <utility>
+
 #include <API_Receive_Packet.h>
 
 
@@ -43,14 +46,15 @@ class API_IO_Sample : public API_Receive_Packet
 
         /** Constructor for instantiation of an API_IO_Sample object with only specific information regarding this API Frame.
          * \param numberOfSamples An unsigned short holding the number of samples.
-         * \param digitalChannelMask A string holding the digital channel mask.
-         * \param analogChannelMask Am unsigned char holding the analog channel mask.
+         * \param digitalChannelMask An unsigned integer holding the digital channel mask.
+         * \param analogChannelMask An unsigned short holding the analog channel mask.
          * \param digitalSamples A string holding the digital samples.
          * \param analogSamples A string holding the analog samples.
          * \note This constructor  might be removed since the initialisation of all these member variables will only (probably) happen
          *       from parsing the API_Receive_Packet::receivedMessage.
          */
-        API_IO_Sample(unsigned short numberOfSamples, std::string digitalChannelMask, unsigned char analogChannelMask, std::string digitalSamples, std::string analogSamples);
+        API_IO_Sample(unsigned short numberOfSamples, unsigned int digitalChannelMask, unsigned short analogChannelMask,
+                      std::vector<unsigned short> digitalSamples, std::vector< std::pair<unsigned short, std::string> > analogSamples);
 
         /** Constructor for full instantiation of an API_IO_Sample object with all relevant information for this API Frame.
          * \param length An unsigned integer holding the length for this API Frame.
@@ -79,58 +83,58 @@ class API_IO_Sample : public API_Receive_Packet
         }
 
         /** Get method to access digital channel mask member variable.
-         * \return A string holdin the current value of the digital channel mask.
+         * \return An unsigned integer holdin the current value of the digital channel mask.
          */
-        inline std::string getDigitalChannelMask(){
+        inline unsigned int getDigitalChannelMask(){
             return digitalChannelMask_;
         }
 
         /** Set method for updating the digital channel mask.
-         * \param digitalChannelMask A string holding the new value to set.
+         * \param digitalChannelMask An unsigned integer holding the new value to set.
          */
-        inline void setDigitalChannelMask(std::string digitalChannelMask){
+        inline void setDigitalChannelMask(unsigned int digitalChannelMask){
             digitalChannelMask_ = digitalChannelMask;
         }
 
         /** Get method to access the analog channel mask member variable.
-         * \return An unsigned char holding the current value of analog channel mask.
+         * \return An unsigned short holding the current value of analog channel mask.
          */
-        inline unsigned char getAnalogChannelMask(){
+        inline unsigned short getAnalogChannelMask(){
             return analogChannelMask_;
         }
 
         /** Set method for updating the analog channel mask.
-         * \param analogChannelMask An unsigned char holding the new value to set.
+         * \param analogChannelMask An unsigned short holding the new value to set.
          */
-        inline void setAnalogChannelMask(unsigned char analogChannelMask){
+        inline void setAnalogChannelMask(unsigned short analogChannelMask){
             analogChannelMask_ = analogChannelMask;
         }
 
         /** Get method to access the digital samples member variable.
          * \return A string holding the current value of digitalSamples_
          */
-        inline std::string getDigitalSamples(){
+        inline std::vector<unsigned short> getDigitalSamples(){
             return digitalSamples_;
         }
 
         /** Set method for updating the digital samples
          * \param digitalSampes A string holding the new value to set
          */
-        inline void setDigitalSamples(std::string digitalSamples){
+        inline void setDigitalSamples(std::vector<unsigned short> digitalSamples){
             digitalSamples_ = digitalSamples;
         }
 
         /** Get method to access analog samples member variable.
          * \return A string holding the current value of analogSamples_
          */
-        inline std::string getAnalogSamples(){
+        inline std::vector< std::pair<unsigned short, std::string> > getAnalogSamples(){
             return analogSamples_;
         }
 
         /** Set method for updating the analog samples.
          * \param analogSamples A string holding the new value to set.
          */
-        void setAnalogSamples(std::string analogSamples){
+        void setAnalogSamples(std::vector< std::pair<unsigned short, std::string> > analogSamples){
             analogSamples_ = analogSamples;
         }
 
@@ -140,16 +144,28 @@ class API_IO_Sample : public API_Receive_Packet
          * To verify checksum: Add all bytes (include checksum, but not the delimiter and length bytes).
          * If the checksum is correct, the sum will equal 0xFF.
          * \param frame String holding an entire API frame (from start delimiter to checksum).
+         * \return Returns a boolean value. "true" if frame was successfuly parse and false if otherwise.
+         * \note One of the reasons for the frame not being successfuly parse is if the checksum isn't valid.
          */
-        void parseFrame(std::string frame);
+        bool parseFrame(std::string frame);
+
+        /**
+         * This method returns the frame based on the current object.
+         * \return Returns a string holding the frame for the current object.
+         */
+        std::string getFrame();
 
     protected:
     private:
+
+        static unsigned int digitalPinsMask_;
+        static unsigned short analogPinsMask_;
+
         unsigned short numberOfSamples_; //!< An unsigned integer holding the number of samples for this Frame. for ZBv2 it will always be 1.
-        std::string digitalChannelMask_; //!< A string holding the digital channel mask.
-        unsigned char analogChannelMask_; //!< An unsigned char holding the analog channel mask.
-        std::string digitalSamples_; //!< A string holding the digital samples.
-        std::string analogSamples_; //!< A string holding the analog samples.
+        unsigned int digitalChannelMask_; //!< An umsigned integer holding the digital channel mask.
+        unsigned short analogChannelMask_; //!< An unsigned short holding the analog channel mask.
+        std::vector<unsigned short> digitalSamples_; //!< A string holding the digital samples.
+        std::vector< std::pair<unsigned short, std::string> > analogSamples_; //!< A string holding the analog samples.
 };
 
 #endif // API_IO_SAMPLE_H
