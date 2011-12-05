@@ -159,9 +159,9 @@ void ZB_MonitoringAndControl::job()
 						default:
 							cout << "Unknown message type!" << endl;
 							break;
-					}
+					}*/
 					message = "";
-					message += buff[i];*/
+					message += buff[i];
 
 					//cout << hex << (int)buff[i] << " ";
 
