@@ -148,6 +148,13 @@ class API_Frame
         ///
         virtual bool parseFrame(std::string frame) = 0;
 
+        /**
+         * This method returns the frame based on the current object, and must be implemented by every
+         * class inhereting from API_Frame.
+         * \return Returns a string holding the frame for the current object.
+         */
+        virtual std::string getFrame() = 0;
+
         ///
         /// This method calculates the checksum for a given frame.
         /// To calculate: Not including frame delimiters and length, add all

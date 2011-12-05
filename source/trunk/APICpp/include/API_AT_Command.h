@@ -112,6 +112,12 @@ class API_AT_Command : public API_Frame
         ///
         virtual bool parseFrame(std::string frame);
 
+        /**
+         * This method returns the frame based on the current object.
+         * \return Returns a string holding the frame for the current object.
+         */
+        virtual std::string getFrame();
+
     protected:
 
         unsigned char frameId_;

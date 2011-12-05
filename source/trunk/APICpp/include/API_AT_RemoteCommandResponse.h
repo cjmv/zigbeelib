@@ -28,8 +28,8 @@ class API_AT_RemoteCommandResponse : public API_AT_CommandResponse
         API_AT_RemoteCommandResponse(const API_AT_RemoteCommandResponse& other);
 
         /** Constructor for instantiation of specific API_AT_RemoteCommandResponse information.
-         * \param destinationAddress A string holding the destination address from where this frame came from.
-         * \param destinationNetworkAddress A string holding the destination network address from where this frame came from.
+         * \param sourceAddress A string holding the source address from where this frame came from.
+         * \param sourceNetworkAddress A string holding the source network address from where this frame came from.
          */
         API_AT_RemoteCommandResponse(std::string destinationAddress, std::string destinationNetworkAddress);
 
@@ -39,8 +39,8 @@ class API_AT_RemoteCommandResponse : public API_AT_CommandResponse
          * \param frameId An unsigned char holding the frame ID concerning the AT remote coomand.
          * \param parameterValue A string holding the parameter value. Empty if the AT remote command was to set / update a given parameter.
          * \param commandStatus A CommandStatus enumerated type to hold the command status referent to the issued AT command.
-         * \param destinationAddress A string holding the destination address from where this frame came from.
-         * \param destinationNetworAddress A string holding the destination network address from there this frame came from.
+         * \param sourceAddress A string holding the source address from where this frame came from.
+         * \param sourceNetworAddress A string holding the source network address from there this frame came from.
          */
         API_AT_RemoteCommandResponse(unsigned int length,
                                      FrameType frameType,
@@ -48,8 +48,8 @@ class API_AT_RemoteCommandResponse : public API_AT_CommandResponse
                                      std::string atCommand,
                                      std::string parameterValue,
                                      CommandStatus commandStatus,
-                                     std::string destinationAddress,
-                                     std::string destinationNetworkAddress);
+                                     std::string sourceAddress,
+                                     std::string sourceNetworkAddress);
 
         /** Default destructor */
         virtual ~API_AT_RemoteCommandResponse();
@@ -60,30 +60,30 @@ class API_AT_RemoteCommandResponse : public API_AT_CommandResponse
          */
         API_AT_RemoteCommandResponse& operator=(const API_AT_RemoteCommandResponse& other);
 
-        /** Get method to access the destination address member variable.
-         * \return Returns a string holding the value of the destination address.
+        /** Get method to access the source address member variable.
+         * \return Returns a string holding the value of the source address.
          */
-        inline std::string getDestinationAddress(){
-            return destinationAddress_;
+        inline std::string getSourceAddress(){
+            return sourceAddress_;
         }
-        /** Set method for updating the destination address member variable.
-         * \param destinationAddress String value holding the new destination address to be set.
+        /** Set method for updating the source address member variable.
+         * \param destinationAddress String value holding the new source address to be set.
          */
-        inline void setDestinationAddress(std::string destinationAddress){
-            destinationAddress_ = destinationAddress;
+        inline void setSourceAddress(std::string sourceAddress){
+            sourceAddress_ = sourceAddress;
         }
 
-        /** Get method to access the destination network address member variable.
-         * \return Returns a string holding the current value of the destination network address.
+        /** Get method to access the source network address member variable.
+         * \return Returns a string holding the current value of the source network address.
          */
-        inline std::string getDestinationNetworkAddress(){
-            return destinationNetworkAddress_;
+        inline std::string getSourceNetworkAddress(){
+            return sourceNetworkAddress_;
         }
-        /** Set method for updating the destination network address member variable.
-         * \param destinationNetworAddress String value holding the new destination network address to be set.
+        /** Set method for updating the source network address member variable.
+         * \param destinationNetworAddress String value holding the new source network address to be set.
          */
-        inline void setDestinationNetworkAddress(std::string destinationNetworkAddress){
-            destinationNetworkAddress_ = destinationNetworkAddress;
+        inline void setSourceNetworkAddress(std::string sourceNetworkAddress){
+            sourceNetworkAddress_ = sourceNetworkAddress;
         }
 
         /**
@@ -92,15 +92,23 @@ class API_AT_RemoteCommandResponse : public API_AT_CommandResponse
         * To verify checksum: Add all bytes (include checksum, but not the delimiter and length bytes).
         * If the checksum is correct, the sum will equal 0xFF.
         * \param frame String holding an entire API frame (from start delimiter to checksum).
+        * \return Returns a boolean value. "true" if frame was successfuly parse and false if otherwise.
+        * \note One of the reasons for the frame not being successfuly parse is if the checksum isn't valid.
         */
-        void parseFrame(std::string frame);
+        bool parseFrame(std::string frame);
+
+        /**
+         * This method returns the frame based on the current object.
+         * \return Returns a string holding the frame for the current object.
+         */
+        std::string getFrame();
 
     protected:
 
     private:
 
-        std::string destinationAddress_; //!< String member variable holding the value for the destination address
-        std::string destinationNetworkAddress_; //!< String member variable holding the value for the destination network address.
+        std::string sourceAddress_; //!< String member variable holding the value for the destination address
+        std::string sourceNetworkAddress_; //!< String member variable holding the value for the destination network address.
 };
 
 #endif // API_AT_REMOTECOMMANDRESPONSE_H
