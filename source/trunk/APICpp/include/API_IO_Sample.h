@@ -111,28 +111,28 @@ class API_IO_Sample : public API_Receive_Packet
         }
 
         /** Get method to access the digital samples member variable.
-         * \return A string holding the current value of digitalSamples_
+         * \return A vector of unsigned short holding the current value of digitalSamples_
          */
         inline std::vector<unsigned short> getDigitalSamples(){
             return digitalSamples_;
         }
 
         /** Set method for updating the digital samples
-         * \param digitalSampes A string holding the new value to set
+         * \param digitalSampes A vector of unsigned short holding the new value to set
          */
         inline void setDigitalSamples(std::vector<unsigned short> digitalSamples){
             digitalSamples_ = digitalSamples;
         }
 
         /** Get method to access analog samples member variable.
-         * \return A string holding the current value of analogSamples_
+         * \return A vector of pairs holding the current value of analogSamples.
          */
-        inline std::vector< std::pair<unsigned short, std::string> > getAnalogSamples(){
+        inline std::vector< std::pair<unsigned short, std::string> >& getAnalogSamples(){
             return analogSamples_;
         }
 
         /** Set method for updating the analog samples.
-         * \param analogSamples A string holding the new value to set.
+         * \param analogSamples A vector of pairs holding the new value to set.
          */
         void setAnalogSamples(std::vector< std::pair<unsigned short, std::string> > analogSamples){
             analogSamples_ = analogSamples;
@@ -158,14 +158,16 @@ class API_IO_Sample : public API_Receive_Packet
     protected:
     private:
 
-        static unsigned int digitalPinsMask_;
-        static unsigned short analogPinsMask_;
+        static unsigned int digitalPinsMask_; //!< A static unsigned integer holding the digital pins Mask. Unless the XBee physically changes, this value will never change.
+        static unsigned short analogPinsMask_; //!< A static unsigned short holding the analog pins mask. Unless the XBee physically changes, this value will never change.
 
         unsigned short numberOfSamples_; //!< An unsigned integer holding the number of samples for this Frame. for ZBv2 it will always be 1.
         unsigned int digitalChannelMask_; //!< An umsigned integer holding the digital channel mask.
         unsigned short analogChannelMask_; //!< An unsigned short holding the analog channel mask.
-        std::vector<unsigned short> digitalSamples_; //!< A string holding the digital samples.
-        std::vector< std::pair<unsigned short, std::string> > analogSamples_; //!< A string holding the analog samples.
+        std::vector<unsigned short> digitalSamples_; //!< A vector holding the digital pins set high by the means of unsigned shorts.
+        std::vector< std::pair<unsigned short, std::string> > analogSamples_; /** A vector of pairs holding the pins receiving analog samples.
+                                                                               *  The pair contains the pin (as un unsigned short) and a string with the analog sample itself.
+                                                                               */
 };
 
 #endif // API_IO_SAMPLE_H
