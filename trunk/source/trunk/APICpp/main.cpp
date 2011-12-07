@@ -68,7 +68,8 @@ void getTemperatureCelsius(int hexAD)
 
  int main()
  {
-     string option = "", message = "";
+     char option[256];
+     string message = "";
      ZB_MonitoringAndControl *mc = new ZB_MonitoringAndControl("/dev/ttyUSB0");
      API_Frame* frame;
 
@@ -80,12 +81,12 @@ void getTemperatureCelsius(int hexAD)
      while(true){
 
         cout << "Option: ";
-        cin >> option;
+        cin.getline(option, 256, '\n');
 
-        if (option.compare("length") == 0)
+        if (string(option).compare("length") == 0)
             cout << "Message pool size: " << mc->messagePoolSize() << endl;
 
-        else if (option.compare("print") == 0){
+        else if (string(option).compare("print") == 0){
             cout << "Message: " << endl;
             mc->accessMessagePool(message);
             for(unsigned int x = 0; x < message.length(); x++){
@@ -96,9 +97,80 @@ void getTemperatureCelsius(int hexAD)
             switch((unsigned char)message[3])
             {
                 case API_Frame::AT_COMMAND_RESPONSE:
+
+                    API_AT_CommandResponse* at_response;
+
                     cout << "It's an AT_COMMAND_RESPONSE" << endl;
                     frame = new API_AT_CommandResponse();
                     frame->parseFrame(message);
+
+                    at_response = dynamic_cast<API_AT_CommandResponse*>(frame);
+
+                    cout << "Command Status: ";
+                    switch(at_response->getCommandStatus())
+                    {
+                        // If OK status has been received from an issued AT command, then the parameter value should be shown (if any).
+                        case API_AT_CommandResponse::OK:
+                        {
+
+                            unsigned int bandwith = 0;
+                            cout << "OK" << endl;
+                            cout << "AT Command: " << at_response->getATCommand() << endl;
+                            cout << "Parameter value: ";
+
+
+                            /* Depending on the command issued, the parameter value should get different treatment. For this particular case
+                             * the AT command was BD, so BD parameter ranges apply.
+                             */
+                            if ((((unsigned  char)at_response->getATCommand()[0]*0x100) + (unsigned  char)at_response->getATCommand()[1]) == API_AT_CommandResponse::SERIAL_CRE_INTERFACE_DATA_RATE){
+
+                                for(unsigned int i = 0; i < at_response->getParameterValue().length(); i++){
+
+                                    if(i == 0)
+                                        bandwith = ((unsigned char)at_response->getParameterValue()[i] * 0x100) + (unsigned char)at_response->getParameterValue()[i+1];
+
+                                    else if(i != at_response->getParameterValue().length()-1)
+                                        bandwith = (bandwith * 0x100) + (unsigned char)at_response->getParameterValue()[i+1];
+                                }
+
+                                cout << dec << API_AT_CommandResponse::BDParameterRange_[bandwith] << endl;
+
+                            }
+                            // Otherwise just print the parameter value
+                            else{
+
+                                for(unsigned int i = 0; i < at_response->getParameterValue().length(); i++){
+
+                                    cout << hex << (int)(unsigned char)at_response->getParameterValue()[i];
+                                }
+                            }
+
+                            cout << endl;
+
+                            break;
+                        }
+                        case API_AT_CommandResponse::ERROR:
+                            cout << "ERROR" << endl;
+                            break;
+
+                        case API_AT_CommandResponse::INVALID_COMMAND:
+                            cout << "INVALID COMMAND" << endl;
+                            break;
+
+                        case API_AT_CommandResponse::INVALID_PARAMETER:
+                            cout << "INVALID PARAMETER" << endl;
+                            break;
+
+                        case API_AT_CommandResponse::TX_FAILURE:
+                            cout << "TX_FAILURE" << endl;
+                            break;
+
+                        default:
+                            cout << "UNKNOWN" << endl;
+                            break;
+                    }
+
+                    delete at_response;
                     break;
                 case API_Frame::RX_PACKET:
                     cout << "It's a RECEIVE PACKET" << endl;
@@ -128,12 +200,19 @@ void getTemperatureCelsius(int hexAD)
             }
             message = "";
         }
-        else if (option.compare("send") == 0){
-            mc->sendMessage(message);
-            message = "";
+        else if (string(option).compare("send") == 0){
+
+            API_AT_Command *at_frame = new API_AT_Command();
+
+            at_frame->setATCommand("ND");
+            at_frame->setParameterValue("");
+            at_frame->setFrameId(1);
+            mc->sendMessage(at_frame->getFrame());
+
+            delete at_frame;
         }
 
-        else if (option.compare("quit") == 0){
+        else if (string(option).compare("quit") == 0){
 
             delete mc;
             break;
