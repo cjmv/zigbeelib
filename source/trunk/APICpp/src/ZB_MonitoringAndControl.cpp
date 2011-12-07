@@ -179,13 +179,18 @@ void ZB_MonitoringAndControl::job()
 // sendMessage method
 void ZB_MonitoringAndControl::sendMessage(string message)
 {
-    // eventually this will send a actual message (for example, an AT command).
-    message = "";
-
-    unsigned char buff[255] = {0};
+    unsigned char* buff = new unsigned char[message.length()];
     unsigned int nBytes = 0;
+
+    cout << "Sending message: " << hex;
+    for(unsigned int i = 0; i < message.length(); i++){
+        buff[i] = (unsigned char)message[i];
+        cout << (int)buff[i] << " ";
+    }
+    cout << endl;
+
     // Implement here
-    buff[0] = 0x7E;
+    /*buff[0] = 0x7E;
 	buff[1] = 0x00;
 	buff[2] = 0x04;
 	buff[3] = 0x08;
@@ -193,13 +198,13 @@ void ZB_MonitoringAndControl::sendMessage(string message)
 	buff[5] = 0x49;
 	buff[6] = 0x44;
 	buff[7] = 0x69;
-	buff[8] = '\n';
+	buff[8] = '\n';*/
 
 
 	cout << "Sending command to XBee..." << endl;
-	nBytes = write(serial_fd_, buff, 9);
+	nBytes = write(serial_fd_, buff, message.length());
 
-	if (nBytes != 9){
+	if (nBytes != message.length()){
 		cout << "Error: Number of bytes written= " << nBytes << endl;
 		exit(1);
 	}

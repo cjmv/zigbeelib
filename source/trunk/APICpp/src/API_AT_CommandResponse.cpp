@@ -61,7 +61,7 @@ bool API_AT_CommandResponse::parseFrame(string frame)
 
     length_ = (MSB * 0x100) + LSB;
     frameId_ = (unsigned char) frame[4];
-    atCommand_ =  frame[5] + frame[6];
+    atCommand_ = frame.substr(5, 2);
     commandStatus_ = CommandStatus(frame[7]);
 
     parameterValue_ = frame.substr(8, length_ - 5);
@@ -84,6 +84,7 @@ string API_AT_CommandResponse::getFrame()
     // It should be verified the validity of each value
 
     checksum_ = frameType_ + frameId_ + (unsigned char)atCommand_[0] + (unsigned char)atCommand_[1] + (unsigned char)commandStatus_;
+
 
     for (unsigned int i = 0; i < parameterValue_.length(); i++){
         checksum_ += (unsigned char)parameterValue_[i];

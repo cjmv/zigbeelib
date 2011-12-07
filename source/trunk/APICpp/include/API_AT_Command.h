@@ -21,6 +21,58 @@ class API_AT_Command : public API_Frame
 {
     public:
 
+    /**
+     * Enumerated type holding all AT commands described as possible
+     * in the XBee documentation.
+     * For clearer identification the enumeration has the following format:
+     * <command type>_<node type>_<command>.
+     *
+     * The "command type" field is identified as follow:
+     * ADDR -> Addressing commands.
+     * NETW -> Networking commands.
+     * SERIAL -> Serial interface commands
+     * SLEEP -> Sleep commands.
+     * EXEC -> Execution commands.
+     *
+     * The "node type" field is identified as C=Coordinator, R=Router and E=End Device.
+     */
+     // All Addressing and sleep commands are enumerated.
+    enum ATCommands {
+        ADDR_CRE_DESTINATION_ADDRESS_HIGH = 0x4448,
+        ADDR_CRE_DESTINATION_ADDRESS_LOW = 0x444C,
+        ADDR_CRE_16BIT_NETWORK_ADDRESS = 0x4D59,
+        ADDR_E_16BIT_PARENT_NETWORK_ADDRESS = 0x4D50,
+        ADDR_CR_NUMBER_REMAINING_CHILDREN = 0x4E43,
+        ADDR_CRE_SERIAL_NUMBER_HIGH = 0x5348,
+        ADDR_CRE_SERIAL_NUMBER_LOW = 0x534C,
+        ADDR_CRE_NODE_IDENTIFIER = 0x4E49,
+        ADDR_CRE_SOURCE_ENDPOINT = 0x5345,
+        ADDR_CRE_DESTINATION_ENDPOINT = 0x4445,
+        ADDR_CRE_CLUSTER_IDENTIFIER = 0x4349,
+        ADDR_CRE_MAX_RF_PAYLOAD_BYTES = 0x4E50,
+        ADDR_CRE_DEVICE_TYPE_IDENTIFIER = 0x4444,
+        NETW_CRE_EXTENDED_PAN_ID = 0x4944,
+        NETW_CRE_NODE_DISCOVERY_TIMEOUT = 0x4E54,
+        NETW_CR_NODE_JOIN_TIME = 0x4E4A,
+        NETW_R_NETWORK_WATCHDOG_TIMEOUT = 0x4E57,
+        SERIAL_CRE_INTERFACE_DATA_RATE = 0x4244,
+        SLEEP_RE_SLEEP_MODE = 0x534D,
+        SLEEP_CRE_NUMBER_SLEEP_PERIODS = 0x534E,
+        SLEEP_CRE_SLEEP_PERIOD = 0x5350,
+        SLEEP_E_TIME_BEFORE_SLEEP = 0x5354,
+        SLEEP_E_SLEEP_OPTIONS = 0x534F,
+        SLEEP_E_WAKE_HOST = 0x5748,
+        SLEEP_E_SLEEP_IMMEDIATELY = 0x5349,
+        SLEEP_E_POLLING_RATE = 0x504F,
+        EXEC_CRE_NODE_DISCOVERY = 0x4E44,
+        EXEC_CRE_DESTINATION_NODE = 0x444E,
+        EXEC_CRE_FORCE_SAMPLE = 0x4953,
+        EXEC_RE_XBEE_SENSOR_SAMPLE = 0x3153
+    };
+
+        static const unsigned int BDParameterRange_[];
+
+
         /** Default constructor */
         API_AT_Command();
 
@@ -119,6 +171,7 @@ class API_AT_Command : public API_Frame
         virtual std::string getFrame();
 
     protected:
+
 
         unsigned char frameId_;
         std::string atCommand_;

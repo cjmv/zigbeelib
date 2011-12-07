@@ -13,10 +13,15 @@
 
 using namespace std;
 
+const unsigned int API_AT_Command::BDParameterRange_[8] = {1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200};
+
 // Default Constructor
 API_AT_Command::API_AT_Command(): API_Frame()
 {
     frameType_ = AT_COMMAND;
+    atCommand_ = "";
+    parameterValue_ = "";
+    frameId_ = 0x0;
     //ctor
 }
 
@@ -85,8 +90,10 @@ string API_AT_Command::getFrame()
 
     checksum_ = frameType_ + frameId_ + (unsigned char)atCommand_[0] + (unsigned char)atCommand_[1];
 
+    length_ = 4;
     for (unsigned int i = 0; i < parameterValue_.length(); i++){
         checksum_ += (unsigned char)parameterValue_[i];
+        length_++;
     }
 
     // (checksum_ & 0xFF) to select the lowest 8 bits

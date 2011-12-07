@@ -16,6 +16,7 @@
 API_Frame::API_Frame()
 {
     startDelimiter_ = 0x7E;
+    length_ = 0;
 }
 
 // Copy constructor
