@@ -69,7 +69,7 @@ bool API_IO_Sample::parseFrame(string frame)
 
     length_ = (MSB * 0x100) + LSB;
     sourceAddress_ = frame.substr(4, 8);
-    sourceNetworkAddress_ = frame[12] + frame[13];
+    sourceNetworkAddress_ = frame.substr(12, 2);//[12] + frame[13];
     receiveOptions_ = ReceiveOptions((unsigned char)frame[14]);
     numberOfSamples_ = (unsigned short)(unsigned  char)frame[15];
 
@@ -82,7 +82,7 @@ bool API_IO_Sample::parseFrame(string frame)
     digitalChannelMask_ = (unsigned char)frame[16] + (unsigned char)frame[17];
     analogChannelMask_ = (unsigned char)frame[18];
 
-    // By doing a bitwise AND between these two mask, we get the actual pings that are set high.
+    // By doing a bitwise AND between these two mask, we get the actual pins that are set high.
     // In this particular case the AND works much like a intersection between two groups, i.e,
     // only the bits position that are both set to 1 are high.
     masked = digitalChannelMask_ & digitalPinsMask_;

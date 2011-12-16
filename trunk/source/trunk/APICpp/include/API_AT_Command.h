@@ -38,6 +38,7 @@ class API_AT_Command : public API_Frame
      */
      // All Addressing and sleep commands are enumerated.
     enum ATCommands {
+        UNKNOWN_COMMAND = 0x00,
         ADDR_CRE_DESTINATION_ADDRESS_HIGH = 0x4448,
         ADDR_CRE_DESTINATION_ADDRESS_LOW = 0x444C,
         ADDR_CRE_16BIT_NETWORK_ADDRESS = 0x4D59,

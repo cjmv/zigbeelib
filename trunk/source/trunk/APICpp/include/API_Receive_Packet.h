@@ -142,7 +142,7 @@ class API_Receive_Packet : public API_Frame
 
     protected:
 
-        std::string sourceAddress_; //!< A string holding the value of the message ource address.
+        std::string sourceAddress_; //!< A string holding the value of the message source address.
         std::string sourceNetworkAddress_; //!< A string holding the value of the message source network address
         ReceiveOptions receiveOptions_; //!< A ReceiveOptions enumerated type holding the message receive options.
         std::string receivedData_; //!< A string holding the received data itself.
