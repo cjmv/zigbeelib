@@ -71,8 +71,8 @@ bool API_AT_RemoteCommandResponse::parseFrame(string frame)
     length_ = (MSB * 0x100) + LSB;
     frameId_ = (unsigned char) frame[4];
     sourceAddress_ = frame.substr(5, 8);
-    sourceNetworkAddress_ = frame[13] + frame[14];
-    atCommand_ =  frame[15] + frame[16];
+    sourceNetworkAddress_ = frame.substr(13, 2); //frame[13] + frame[14];
+    atCommand_ =  frame.substr(15, 2); //frame[15] + frame[16];
     commandStatus_ = CommandStatus(frame[17]);
 
     // 15 is fixed length without parameter value

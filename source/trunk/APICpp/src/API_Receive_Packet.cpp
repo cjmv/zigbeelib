@@ -61,7 +61,7 @@ bool API_Receive_Packet::parseFrame(string frame)
 
     length_ = (MSB * 0x100) + LSB;
     sourceAddress_ = frame.substr(4, 8);
-    sourceNetworkAddress_ = frame[12] + frame[13];
+    sourceNetworkAddress_ = frame.substr(12, 2); //frame[12] + frame[13];
     receiveOptions_ = ReceiveOptions((unsigned char)frame[14]);
 
     // 12 is the fixed length without received data

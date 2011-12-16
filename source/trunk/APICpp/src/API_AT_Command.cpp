@@ -63,7 +63,7 @@ bool API_AT_Command::parseFrame(string frame)
 
     length_ = (MSB * 0x100) + LSB;
     frameId_ = (unsigned char) frame[4];
-    atCommand_ =  frame[5] + frame[6];
+    atCommand_ =  frame.substr(5,2);
 
     // 4 is the fixed length without parameter
     if(length_ > 4)
