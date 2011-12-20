@@ -9,7 +9,7 @@
  * $Revision$
  * */
 
-#include "ZB_MonitoringAndControl.h"
+#include "ZB_Frame_TXRX.h"
 #include "ZB_Node.h"
 #include "API_IO_Sample.h"
 #include "API_AT_RemoteCommandResponse.h"
@@ -71,7 +71,7 @@ void getTemperatureCelsius(int hexAD)
  {
      char option[256];
      string message = "";
-     ZB_MonitoringAndControl *mc = new ZB_MonitoringAndControl("/dev/ttyUSB0");
+     ZB_Frame_TXRX *mc = new ZB_Frame_TXRX("/dev/ttyUSB0");
      API_Frame* frame;
      ZB_Node* node;
      vector<ZB_Node*> networkNodes;
