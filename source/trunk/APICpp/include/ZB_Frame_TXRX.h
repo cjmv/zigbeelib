@@ -92,14 +92,14 @@ class ZB_Frame_TXRX: public Thread
 
 
         /** This method purpose is to open the thread where the device will be monitored for new messages. */
-        void startMonitoring();
+        void start();
 
         /** This method purpose is to stop the monitoring process by setting a boolean value to false,
          * thus terminating the active thread by the end of the funtion thread.
          * \sa listenDevice
          * \sa run_
          */
-        void stopMonitoring();
+        void stop();
 
         /** This method purpose is to access the messagePool which updated, either by inserting new messages,
          * received from the interface device, or by popping one out, with the intention to process it.

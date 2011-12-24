@@ -47,7 +47,7 @@ ZB_Frame_TXRX& ZB_Frame_TXRX::operator=(const ZB_Frame_TXRX& rhs)
 }
 
 // startMonitoring method
-void ZB_Frame_TXRX::startMonitoring()
+void ZB_Frame_TXRX::start()
 {
     run_ = true;
     openThread();
@@ -55,7 +55,7 @@ void ZB_Frame_TXRX::startMonitoring()
 }
 
 // stopMonitoring method
-void ZB_Frame_TXRX::stopMonitoring()
+void ZB_Frame_TXRX::stop()
 {
     run_ = false;
 

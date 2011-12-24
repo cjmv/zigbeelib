@@ -26,7 +26,8 @@ class API_AT_CommandResponse : public API_AT_Command
             ERROR,
             INVALID_COMMAND,
             INVALID_PARAMETER,
-            TX_FAILURE
+            TX_FAILURE,
+            UNKOWN_STATUS
         };
 
         /** Default constructor */
