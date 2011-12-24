@@ -31,8 +31,16 @@ API_AT_Command::API_AT_Command(const API_AT_Command& other): API_Frame()
     //copy ctor
 }
 
+API_AT_Command::API_AT_Command(unsigned char frameId, ATCommands atCommand, string parameterValue)
+: API_Frame(), frameId_(frameId), parameterValue_(parameterValue)
+{
+    frameType_ = AT_COMMAND;
+
+    // Have to convert the atCommand to string.
+}
+
 // Constructor
-API_AT_Command::API_AT_Command(unsigned char frameId, std::string atCommand, std::string parameterValue)
+API_AT_Command::API_AT_Command(unsigned char frameId, std::string atCommand, string parameterValue)
 : API_Frame(), frameId_(frameId), atCommand_(atCommand), parameterValue_(parameterValue)
 {
     frameType_ = AT_COMMAND;

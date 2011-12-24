@@ -84,6 +84,14 @@ class API_AT_Command : public API_Frame
 
         /** Constructor for instantiation of an API AT Frame with common relevant parameters.
          * \param frameId An unsigned char holding the frame ID for this message.
+         * \param atCommand An enumerated ATCommands type holding the AT command to be sent.
+         * \param parameterValue A string holding the parameter value associated with the AT Command.
+         *                       If empty, this AT command shall query the module.
+         */
+        API_AT_Command(unsigned char frameId, ATCommands atCommand, std::string parameterValue);
+
+        /** Constructor for instantiation of an API AT Frame with common relevant parameters.
+         * \param frameId An unsigned char holding the frame ID for this message.
          * \param atCommand A string holding the AT command to be sent.
          * \param parameterValue A string holding the parameter value associated with the AT Command.
          *                       If empty, this AT command shall query the module.
