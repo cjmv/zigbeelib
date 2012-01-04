@@ -63,7 +63,7 @@ class API_AT_CommandResponse : public API_AT_Command
          *  \param other Object to assign from
          *  \return A reference to this
          */
-        API_AT_CommandResponse& operator=(const API_AT_CommandResponse& other);
+        //API_AT_CommandResponse& operator=(const API_AT_CommandResponse& other);
 
         /** Get method to access commandStatus_
          * \return Unsigned char holding the current value of AT response command status.
@@ -78,6 +78,13 @@ class API_AT_CommandResponse : public API_AT_Command
         inline void setCommandStatus(unsigned char commandStatus){
             commandStatus_ = commandStatus;
         }
+
+        /**
+         * This method purpose is to return the Bandwith value from a AT BD command.
+         * \return An unsigned integer holding the bandwith value.
+         * \sa BDParameterRange
+         */
+        unsigned int get_ATBD_Value();
 
         /**
         * The main purpose of this method is to parse an ZigBee API frame into the apropriate classes.

@@ -35,7 +35,7 @@ ZB_Frame_TXRX::ZB_Frame_TXRX(string device): Thread(), device_(device)
 ZB_Frame_TXRX::~ZB_Frame_TXRX()
 {
     //dtor
-    stopMonitoring(); // set run_ flag to false, this will make the reading cycle to break;
+    stop(); // set run_ flag to false, this will make the reading cycle to break;
     close(serial_fd_); // close serial file descriptor.
 }
 
@@ -69,9 +69,11 @@ void ZB_Frame_TXRX::accessMessagePool(string& message)
     {
         if (message.compare("") == 0){ // check if the parameter message value is empty.
             // Since message is empty, than this method call has the purpose to acquire a message from the message pool.
-            if(!messagePool_.empty())
+            if(!messagePool_.empty()){
+
                 message = messagePool_.front();
                 messagePool_.erase(messagePool_.begin());
+            }
         }
         else
             messagePool_.push_back(message); // message was not empty, thus this call has the purpose to add one more message to the pool.
@@ -87,6 +89,8 @@ void ZB_Frame_TXRX::job()
     unsigned char buff[255] = {0};
 	string message = "";
     struct termios tio;
+
+    cout << "DEBUG: Running TXRX job..." << endl;
 
     cfmakeraw(&tio);
     cfsetospeed(&tio,B9600);            // 9600 baud

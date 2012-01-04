@@ -42,7 +42,7 @@ class API_IO_Sample : public API_Receive_Packet
          *  \param other Object to assign from
          *  \return A reference to this
          */
-        API_IO_Sample& operator=(const API_IO_Sample& other);
+        //API_IO_Sample& operator=(const API_IO_Sample& other);
 
         /** Constructor for instantiation of an API_IO_Sample object with only specific information regarding this API Frame.
          * \param numberOfSamples An unsigned short holding the number of samples.

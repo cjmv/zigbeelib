@@ -47,11 +47,30 @@ API_AT_CommandResponse::~API_AT_CommandResponse()
     //dtor
 }
 
-API_AT_CommandResponse& API_AT_CommandResponse::operator=(const API_AT_CommandResponse& rhs)
+/*API_AT_CommandResponse& API_AT_CommandResponse::operator=(const API_AT_CommandResponse& rhs)
 {
     if (this == &rhs) return *this; // handle self assignment
     //assignment operator
     return *this;
+}*/
+
+// get_ATBD_Value method
+unsigned int API_AT_CommandResponse::get_ATBD_Value()
+{
+    unsigned char bandwith = 0x0;
+
+    for(unsigned int i = 0; i < parameterValue_.length(); i++){
+
+        if(i == 0)
+            bandwith = ((unsigned char)parameterValue_[i] * 0x100) + (unsigned char)parameterValue_[i+1];
+
+        else if(i != parameterValue_.length()-1)
+            bandwith = (bandwith * 0x100) + (unsigned char)parameterValue_[i+1];
+    }
+
+    //cout << dec << API_AT_CommandResponse::BDParameterRange_[bandwith] << endl;
+
+    return API_AT_CommandResponse::BDParameterRange[bandwith];
 }
 
 // parseFrame method

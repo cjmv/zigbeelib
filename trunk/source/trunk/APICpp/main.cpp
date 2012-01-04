@@ -9,7 +9,7 @@
  * $Revision$
  * */
 
-#include "ZB_Frame_TXRX.h"
+#include "ZB_MonitoringAndControl.h"
 #include "ZB_Node.h"
 #include "API_IO_Sample.h"
 #include "API_AT_RemoteCommandResponse.h"
@@ -66,20 +66,19 @@ void getTemperatureCelsius(int hexAD)
 
 }
 
+void useTXRX()
+{
+    char option[256];
+    string message = "";
+    ZB_Frame_TXRX *mc = new ZB_Frame_TXRX("/dev/ttyUSB0");
+    API_Frame* frame;
+    ZB_Node* node;
+    vector<ZB_Node*> networkNodes;
+    //ZB_Node* nodeArray[2] = {0};
 
- int main()
- {
-     char option[256];
-     string message = "";
-     ZB_Frame_TXRX *mc = new ZB_Frame_TXRX("/dev/ttyUSB0");
-     API_Frame* frame;
-     ZB_Node* node;
-     vector<ZB_Node*> networkNodes;
-     //ZB_Node* nodeArray[2] = {0};
+    //mc->setDevice("/dev/ttyUSB0");
 
-     //mc->setDevice("/dev/ttyUSB0");
-
-     mc->startMonitoring();
+    mc->start();
 
 
      while(true){
@@ -139,7 +138,7 @@ void getTemperatureCelsius(int hexAD)
                                         bandwith = (bandwith * 0x100) + (unsigned char)at_response->getParameterValue()[i+1];
                                 }
 
-                                cout << dec << API_AT_CommandResponse::BDParameterRange_[bandwith] << endl;
+                                cout << dec << API_AT_CommandResponse::BDParameterRange[bandwith] << endl;
 
                             }
                             else if (atCommand == API_AT_CommandResponse::EXEC_CRE_NODE_DISCOVERY){
@@ -290,7 +289,142 @@ void getTemperatureCelsius(int hexAD)
             break;
         }
      }
+}
 
+void useMC()
+{
+    unsigned char frameID = 0x0;
+    char option[256];
+    string message = "";
+
+    ZB_MonitoringAndControl *mc = new ZB_MonitoringAndControl("/dev/ttyUSB0");
+
+    mc->startMonitoring();
+    sleep(2);
+    frameID = mc->discoverNetworkNodes();
+
+    while(true){
+
+        cout << "Option: ";
+        cin.getline(option, 256, '\n');
+
+        if(string(option).compare("nodes") == 0){
+
+            cout << "Nodes:" << endl;
+            for(unsigned int i = 0; i < mc->getNodeList().size(); i++){
+
+                cout << "\t(size: " << mc->getNodeList()[i]->getNodeIdent().size() << "): " <<  mc->getNodeList()[i]->getNodeIdent() << endl;
+
+                cout << "Network Address (" << mc->getNodeList()[i]->getNetworkAddr().size() << " bytes):" <<  hex;
+
+                for(unsigned int x = 0; x < mc->getNodeList()[i]->getNetworkAddr().size(); x++){
+
+                    cout << (int)(unsigned char)mc->getNodeList()[i]->getNetworkAddr()[x];
+                }
+                cout << endl;
+            }
+        }
+
+        else if(string(option).compare("sample ROUTER") == 0){
+
+            string sample = "";
+            API_IO_Sample io_sample;
+
+            if (mc->accessNodeIOSample("ROUTER", &io_sample)){
+
+                cout << "DEBUG: IO Frame length: " << io_sample.getLength() << endl;
+                sample = io_sample.getAnalogSamples().begin()->second;
+
+                getTemperatureCelsius((unsigned char)sample[0]*0x100 + (unsigned char)sample[1]);
+
+            }
+            else
+                cout << "No Sample found for ROUTER node." << endl;
+        }
+
+        else if(string(option).compare("response") == 0){
+
+            ZB_MonitoringAndControl::Resumed_AT_Response response;
+
+            cout << "Got answer from AT Command with frameID: " << hex << (int)frameID << endl;
+            if (mc->retrieveCommandsResponseBuffer(frameID, response)){
+
+                cout << "Status: ";
+                switch(response.commandStatus){
+
+                    case API_AT_CommandResponse::OK:
+
+                        cout << "OK" << endl;
+                        break;
+
+                    case API_AT_CommandResponse::ERROR:
+
+                        cout << "ERROR" << endl;
+                        break;
+
+                    case API_AT_CommandResponse::INVALID_COMMAND:
+
+                        cout << "INVALID COMMAND" << endl;
+                        break;
+
+                    case API_AT_CommandResponse::INVALID_PARAMETER:
+
+                        cout << "INVALID PARAMETER" << endl;
+                        break;
+
+                    case API_AT_CommandResponse::TX_FAILURE:
+
+                        cout << "TRANSMISSION FAILURE" << endl;
+                        break;
+
+                    default:
+
+                        cout << "UNKOWN STATUS" << endl;
+                        break;
+                }
+
+                cout << "Parameter: ";
+                switch(response.parameterValueType){
+
+                    case ZB_MonitoringAndControl::UNSIGNED_INT:
+
+                        cout << (unsigned int)response.parameterValue << endl;
+                        break;
+
+                    case ZB_MonitoringAndControl::STRING:
+
+                        cout << (char*)response.parameterValue << endl;
+                        break;
+
+                    default:
+
+                        cout << "ERROR: No type for parameter value!" << endl;
+                        break;
+                }
+            }
+        }
+
+        else if (string(option).find("command") != string::npos){
+
+            if(string(option).find("NI") != string::npos){
+
+                mc->setNodeIdentifier(mc->int2Hex((unsigned int)0x479c), "ROUTER");
+            }
+        }
+
+        else if (string(option).compare("quit") == 0){
+
+            delete mc;
+            break;
+        }
+    }
+}
+
+
+ int main()
+ {
+     //useTXRX();
+     useMC();
 
      return 0;
  }

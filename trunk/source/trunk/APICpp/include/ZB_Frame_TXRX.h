@@ -13,8 +13,8 @@
  * $Revision$
  * */
 
-#ifndef ZB_MONITORINGANDCONTROL_H
-#define ZB_MONITORINGANDCONTROL_H
+#ifndef ZB_FRAME_TXRX_H
+#define ZB_FRAME_TXRX_H
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -129,4 +129,4 @@ class ZB_Frame_TXRX: public Thread
 
 };
 
-#endif // ZB_MONITORINGANDCONTROL_H
+#endif // ZB_FRAME_TXRX_H

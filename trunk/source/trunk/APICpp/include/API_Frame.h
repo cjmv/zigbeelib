@@ -74,7 +74,7 @@ class API_Frame
          *  \param other Object to assign from
          *  \return A reference to this
          */
-        API_Frame& operator=(const API_Frame& other);
+        //API_Frame& operator=(const API_Frame& other);
 
         ///
         /// Get method for API frame start delimiter.

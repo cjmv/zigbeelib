@@ -53,12 +53,12 @@ API_IO_Sample::~API_IO_Sample()
     //dtor
 }
 
-API_IO_Sample& API_IO_Sample::operator=(const API_IO_Sample& rhs)
+/*API_IO_Sample& API_IO_Sample::operator=(const API_IO_Sample& rhs)
 {
     if (this == &rhs) return *this; // handle self assignment
     //assignment operator
     return *this;
-}
+}*/
 
 // parseFrame method
 bool API_IO_Sample::parseFrame(string frame)
