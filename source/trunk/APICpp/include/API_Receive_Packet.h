@@ -65,7 +65,7 @@ class API_Receive_Packet : public API_Frame
          *  \param other Object to assign from
          *  \return A reference to this
          */
-        API_Receive_Packet& operator=(const API_Receive_Packet& other);
+        //API_Receive_Packet& operator=(const API_Receive_Packet& other);
 
         /** Get method to access source address memeber variable.
          * \return String holding the current value of sourceAddress_

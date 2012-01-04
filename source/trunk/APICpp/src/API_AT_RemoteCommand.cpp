@@ -17,7 +17,7 @@
 API_AT_RemoteCommand::API_AT_RemoteCommand(): API_AT_Command()
 {
     //ctor
-    frameType_ = AT_COMMAND;
+    frameType_ = AT_REMOTE_COMMAND;
 }
 
 // Copy constructor
@@ -27,11 +27,20 @@ API_AT_RemoteCommand::API_AT_RemoteCommand(const API_AT_RemoteCommand& other)
 }
 
 // Specific constructor
-API_AT_RemoteCommand::API_AT_RemoteCommand(string destinationAddress, string destinationNetworkAddress, RemoteCommandOption remoteCommandOption)
-: API_AT_Command(), destinationAddress_(destinationAddress), destinationNetworkAddress_(destinationNetworkAddress), remoteCommandOption_(remoteCommandOption)
+API_AT_RemoteCommand::API_AT_RemoteCommand(unsigned char frameId, string atCommand, string parameterValue)
+: API_AT_Command(frameId, atCommand, parameterValue)
 {
     // Implementation here.
-    frameType_ = AT_COMMAND;
+    frameType_ = AT_REMOTE_COMMAND;
+}
+
+// Specific constructor
+API_AT_RemoteCommand::API_AT_RemoteCommand(unsigned char frameId, string atCommand, string parameterValue,
+                                           string destinationAddress, string destinationNetworkAddress, RemoteCommandOption remoteCommandOption)
+: API_AT_Command(frameId, atCommand, parameterValue), destinationAddress_(destinationAddress), destinationNetworkAddress_(destinationNetworkAddress), remoteCommandOption_(remoteCommandOption)
+{
+    // Implementation here.
+    frameType_ = AT_REMOTE_COMMAND;
 }
 
 // Full constructor
@@ -49,12 +58,12 @@ API_AT_RemoteCommand::~API_AT_RemoteCommand()
     //dtor
 }
 
-API_AT_RemoteCommand& API_AT_RemoteCommand::operator=(const API_AT_RemoteCommand& rhs)
+/*API_AT_RemoteCommand& API_AT_RemoteCommand::operator=(const API_AT_RemoteCommand& rhs)
 {
     if (this == &rhs) return *this; // handle self assignment
     //assignment operator
     return *this;
-}
+}*/
 
 // parseFrame method
 bool API_AT_RemoteCommand::parseFrame(string frame)
@@ -104,8 +113,10 @@ string API_AT_RemoteCommand::getFrame()
         checksum_ += (unsigned char)destinationAddress_[i];
     }
 
+    length_ = 15;
     for (unsigned int i = 0; i < parameterValue_.length(); i++){
         checksum_ += (unsigned char)parameterValue_[i];
+        length_++;
     }
 
     // (checksum_ & 0xFF) to select the lowest 8 bits

@@ -47,12 +47,12 @@ API_Receive_Packet::~API_Receive_Packet()
     //dtor
 }
 
-API_Receive_Packet& API_Receive_Packet::operator=(const API_Receive_Packet& rhs)
+/*API_Receive_Packet& API_Receive_Packet::operator=(const API_Receive_Packet& rhs)
 {
     if (this == &rhs) return *this; // handle self assignment
     //assignment operator
     return *this;
-}
+}*/
 
 bool API_Receive_Packet::parseFrame(string frame)
 {

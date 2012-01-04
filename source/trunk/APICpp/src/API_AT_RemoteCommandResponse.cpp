@@ -55,12 +55,12 @@ API_AT_RemoteCommandResponse::~API_AT_RemoteCommandResponse()
     //dtor
 }
 
-API_AT_RemoteCommandResponse& API_AT_RemoteCommandResponse::operator=(const API_AT_RemoteCommandResponse& rhs)
+/*API_AT_RemoteCommandResponse& API_AT_RemoteCommandResponse::operator=(const API_AT_RemoteCommandResponse& rhs)
 {
     if (this == &rhs) return *this; // handle self assignment
     //assignment operator
     return *this;
-}
+}*/
 
 // parseFrame method
 bool API_AT_RemoteCommandResponse::parseFrame(string frame)

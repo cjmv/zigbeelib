@@ -36,11 +36,22 @@ class API_AT_RemoteCommand : public API_AT_Command
         API_AT_RemoteCommand(const API_AT_RemoteCommand& other);
 
         /** Specific constructor for instantiation of a API_AT_RemoteCommand object.
+         * \param frameId An unsigned char holding the frame ID for this message.
+         * \param atCommand A string holding the AT command.
+         * \param parameterValue A string holding the parameter value to send. If empty the AT command shall act as a query.
+         */
+        API_AT_RemoteCommand(unsigned char frameId, std::string atCommand, std::string parameterValue);
+
+        /** Specific constructor for instantiation of a API_AT_RemoteCommand object.
+         * \param frameId An unsigned char holding the frame ID for this message.
+         * \param atCommand A string holding the AT command.
+         * \param parameterValue A string holding the parameter value to send. If empty the AT command shall act as a query.
          * \param destinationAddress A string holding the destination address to where this AT command shall be issued.
          * \param destinationNetworkAddress A string holding the destination network address to where this AT command shall be issued.
          * \param remoteCommandOption A RemoteCommandOption enumeration holding the remote command option that shall be applied to this AT command.
          */
-        API_AT_RemoteCommand(std::string destinationAddress, std::string destinationNetworkAddress, RemoteCommandOption remoteCommandOption);
+        API_AT_RemoteCommand(unsigned char frameId, std::string atCommand, std::string parameterValue,
+                             std::string destinationAddress, std::string destinationNetworkAddress, RemoteCommandOption remoteCommandOption);
 
         /** Full Constructor for instantiation of a API_AT_RemoteCommand object with all relevant data.
          * \param length An unsigned integer holding the length of the API Frame.
@@ -67,7 +78,7 @@ class API_AT_RemoteCommand : public API_AT_Command
          *  \param other Object to assign from
          *  \return A reference to this
          */
-        API_AT_RemoteCommand& operator=(const API_AT_RemoteCommand& other);
+        //API_AT_RemoteCommand& operator=(const API_AT_RemoteCommand& other);
 
         /** Get method to access destination address.
          * \return Returns a string value holding the destination address.

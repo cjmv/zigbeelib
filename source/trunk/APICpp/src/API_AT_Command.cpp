@@ -13,7 +13,7 @@
 
 using namespace std;
 
-const unsigned int API_AT_Command::BDParameterRange_[8] = {1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200};
+const unsigned int API_AT_Command::BDParameterRange[8] = {1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200};
 
 // Default Constructor
 API_AT_Command::API_AT_Command(): API_Frame()
@@ -58,12 +58,12 @@ API_AT_Command::~API_AT_Command()
     //dtor
 }
 
-API_AT_Command& API_AT_Command::operator=(const API_AT_Command& rhs)
+/*API_AT_Command& API_AT_Command::operator=(const API_AT_Command& rhs)
 {
     if (this == &rhs) return *this; // handle self assignment
     //assignment operator
     return *this;
-}
+}*/
 
 bool API_AT_Command::parseFrame(string frame)
 {

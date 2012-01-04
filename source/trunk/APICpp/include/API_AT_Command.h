@@ -71,7 +71,19 @@ class API_AT_Command : public API_Frame
         EXEC_RE_XBEE_SENSOR_SAMPLE = 0x3153
     };
 
-        static const unsigned int BDParameterRange_[];
+    enum SleepMode {
+        SLEEP_DISABLED = 0x0,
+        PIN_SLEEP_ENABLED = 0x1,
+        CYCLIC_SLEEP_ENABLED = 0x4,
+        CYCLIC_SLEEP_PIN_WAKE = 0x5
+    };
+
+    enum SleepOptions {
+        ALWAYS_WAKE = 0x02,
+        SLEEP_ENTIRE_TIME = 0x04
+    };
+
+        static const unsigned int BDParameterRange[];
 
 
         /** Default constructor */
@@ -113,7 +125,7 @@ class API_AT_Command : public API_Frame
          *  \param other Object to assign from
          *  \return A reference to this
          */
-        API_AT_Command& operator=(const API_AT_Command& other);
+        //API_AT_Command& operator=(const API_AT_Command& other);
 
         /** Get method to access the current value of the frame ID.
         * \return Returns an unsigned char holding the frame id parameter value.

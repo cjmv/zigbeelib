@@ -91,7 +91,7 @@ class ZB_Node
          *  \param other Object to assign from
          *  \return A reference to this
          */
-        ZB_Node& operator=(const ZB_Node& other);
+        //ZB_Node& operator=(const ZB_Node& other);
 
         /** << Operator overloading to allow printing to the standart output all node information.
          * \param out The std::ostream to be used.

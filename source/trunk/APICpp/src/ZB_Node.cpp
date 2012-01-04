@@ -43,7 +43,7 @@ ZB_Node::ZB_Node(string responseParameter)
         responseParameter.erase(responseParameter.size()-1);
         parentNetworkAddr_ = responseParameter.substr(responseParameter.size()-3, 2);
         responseParameter.erase(responseParameter.size()-3, 2);
-        nodeIdent_ = responseParameter;
+        nodeIdent_ = responseParameter.erase(responseParameter.size()-1, 1);
     }
 }
 
@@ -66,12 +66,12 @@ ZB_Node::ZB_Node(const ZB_Node& other)
     //copy ctor
 }
 
-ZB_Node& ZB_Node::operator=(const ZB_Node& rhs)
+/*ZB_Node& ZB_Node::operator=(const ZB_Node& rhs)
 {
     if (this == &rhs) return *this; // handle self assignment
     //assignment operator
     return *this;
-}
+}*/
 
 // Operator << overloading
 ostream& operator << (ostream& out, const ZB_Node& node)

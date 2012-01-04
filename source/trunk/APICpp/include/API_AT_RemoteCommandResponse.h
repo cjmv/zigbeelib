@@ -58,7 +58,7 @@ class API_AT_RemoteCommandResponse : public API_AT_CommandResponse
          *  \param other Object to assign from
          *  \return A reference to this
          */
-        API_AT_RemoteCommandResponse& operator=(const API_AT_RemoteCommandResponse& other);
+        //API_AT_RemoteCommandResponse& operator=(const API_AT_RemoteCommandResponse& other);
 
         /** Get method to access the source address member variable.
          * \return Returns a string holding the value of the source address.
