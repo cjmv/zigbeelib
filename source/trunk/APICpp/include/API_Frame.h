@@ -56,13 +56,13 @@ class API_Frame
 
         /** Constructor to initialise an API Frame (through its children), holding common items to all frame types.
          * \param length An unsigned integer holding the length for this API Frame.
-         * \param framType A FrameType enumerated value holding the Frame type for this API message.
+         * \param frameType A FrameType enumerated value holding the Frame type for this API message.
          */
         API_Frame(unsigned int length, FrameType frameType);
 
         /** Constructor to initialise an API Frame (through its children), holding common items to all frame types.
          * \param length An unsigned integer holding the length for this API Frame.
-         * \param framType A FrameType enumerated value holding the Frame type for this API message.
+         * \param frameType A FrameType enumerated value holding the Frame type for this API message.
          * \param checksum An unsigned char holding the value of the calculated checksum
          */
         API_Frame(unsigned int length, FrameType frameType, unsigned char checksum);

@@ -50,7 +50,7 @@ API_Frame::~API_Frame()
 
 unsigned char API_Frame::calculateChecksum(string frame)
 {
-    unsigned char checksum;
+    unsigned char checksum = 0x0;
 
     return checksum;
 }
