@@ -14,7 +14,7 @@ using namespace std;
 
 
 // Default constructor
-ZB_Frame_TXRX::ZB_Frame_TXRX(): Thread()
+ZB_Frame_TXRX::ZB_Frame_TXRX(API_MODE api_mode): Thread(), api_mode_(api_mode)
 {
     run_ = false;
 }
@@ -85,7 +85,8 @@ void ZB_Frame_TXRX::accessMessagePool(string& message)
 void ZB_Frame_TXRX::job()
 {
     int nBytes = 0;
-	bool found_init = false;
+    unsigned int message_length = 0;
+	bool found_init = false, found_size = false;
     unsigned char buff[255] = {0};
 	string message = "";
     struct termios tio;
@@ -98,7 +99,7 @@ void ZB_Frame_TXRX::job()
     tio.c_cc[VMIN]=1;
     tio.c_cc[VTIME]=5;
 
-    serial_fd_ = open(device_.c_str(), O_RDWR); // device is normally somethind like "/dev/ttyUSB0"
+    serial_fd_ = open(device_.c_str(), O_RDWR); // device is normally something like "/dev/ttyUSB0"
 
 	if (serial_fd_ < 0){
 
@@ -107,14 +108,6 @@ void ZB_Frame_TXRX::job()
 	}
 
 	tcsetattr(serial_fd_,TCSANOW,&tio);
-	//tcsetattr(serial_fd,TCSADRAIN,&tio);
-
-
-	/*for (unsigned int i = 0; i < sizeof(buff); i++)
-	{
-		buff[i] = '\0';
-	}*/
-
 
 	//cout << "Wating for response..." << endl;
 	nBytes = 0;
@@ -125,6 +118,24 @@ void ZB_Frame_TXRX::job()
 			//cout << "nBytes read: " << nBytes << endl;
 			for(int i = 0; i < nBytes; i++)
 			{
+			    if(!found_size && message.length() > 3){
+
+			        found_size = true;
+
+			        if(api_mode_ == ESCAPED){
+
+			            string aux = message;
+			            message_length = ((unsigned char)aux[1] << 8) + (unsigned char)aux[2];
+			            message_length += 4;
+			        }
+			        else{
+                        message_length = ((unsigned char)message[1] << 8) + (unsigned char)message[2];
+                        message_length += 4;
+			        }
+
+			        cout << "Incoming frame size: " << message_length << endl;
+			    }
+
 				if(buff[i] == 0x7E && !found_init){
 
 					found_init = true;
@@ -136,39 +147,40 @@ void ZB_Frame_TXRX::job()
 					//cout << (int)buff[i] << " ";
 				}
 
-				else if (buff[i] == 0x7E && found_init){
+				/*else if (buff[i] == 0x7E && found_init){
 
-					//cout << "Adding message to pool:";
+					cout << "Adding message to pool.";
+
+					// If in ESCAPED mode, remove escape control characters from incoming frame.
+					if(api_mode_ == ESCAPED)
+                        removeEscapes(message);
+
 					accessMessagePool(message);
-					/*for(unsigned int x = 0; x < message.length(); x++){
-						cout << hex << (int)(unsigned char)message[x] << " ";
-					}*/
-					/*cout << dec << endl;
 
-					cout << "Processing Message:" << endl << "TYPE:\t";
-
-
-					switch((unsigned char)message[3]){
-
-						case 0x88:
-							cout << "AT COMMAND RESPONSE" << endl;
-							break;
-						case 0x92:
-							//double Vlm335A = 0.0;
-							cout << "RX I/O DATA" << endl;
-
-							getTemperatureCelsius((unsigned char)message[19]*0x100 + (unsigned char)message[20]);
-
-							break;
-						default:
-							cout << "Unknown message type!" << endl;
-							break;
-					}*/
 					message = "";
 					message += buff[i];
+					found_size = false;
 
 					//cout << hex << (int)buff[i] << " ";
 
+				}*/
+				// Check if the string retrieved until now,
+				// has the expected frame length. If yes, it means the frame is complete.
+				if(found_size && message.length() == message_length){
+
+                    cout << "Adding message to pool (by size)." << endl;
+				    // If in ESCAPED mode, remove escape control characters from incoming frame.
+					if(api_mode_ == ESCAPED)
+                        removeEscapes(message);
+
+					accessMessagePool(message);
+
+					message = "";
+					found_size = false;
+					found_init = false;
+					message_length = 0;
+
+					//cout << hex << (int)buff[i] << " ";
 				}
 			}
 		}
@@ -185,6 +197,10 @@ void ZB_Frame_TXRX::sendMessage(string message)
 {
     unsigned char* buff = new unsigned char[message.length()];
     unsigned int nBytes = 0;
+
+    // If in escaped mode, add escape control characters to message.
+    if(api_mode_ == ESCAPED)
+        addEscapes(message);
 
     cout << "Sending message: " << hex;
     for(unsigned int i = 0; i < message.length(); i++){
@@ -213,4 +229,41 @@ void ZB_Frame_TXRX::sendMessage(string message)
 		exit(1);
 	}
 	cout << "Command sent..." << endl;
+}
+
+// removeEscapes method
+void ZB_Frame_TXRX::removeEscapes(string& frame)
+{
+    cout << "Removing escape control characters..." << endl;
+
+    for (unsigned int i = 1; i < frame.length(); i++){
+
+        if((unsigned char)frame[i] == 0x7D){
+
+            frame = frame.erase(i, 1);
+
+            if(i < frame.length())
+                frame[i] = (unsigned char)frame[i] ^ 0x20;
+        }
+    }
+}
+
+// addEscapes method
+void ZB_Frame_TXRX::addEscapes(string& frame)
+{
+    cout << "Adding escape control characters..." << endl;
+
+    for (unsigned int i=1; i < frame.length(); i++){
+
+        // Special characters that need escape
+        if ((unsigned char)frame[i] == 0x7E ||
+            (unsigned char)frame[i] == 0x7D ||
+            (unsigned char)frame[i] == 0x11 ||
+            (unsigned char)frame[i] == 0x13){
+
+                frame = frame.insert(i, 1, (unsigned char)0x7D);
+                i++;
+                frame[i] = (unsigned char)frame[i] ^ 0x20;
+        }
+    }
 }
