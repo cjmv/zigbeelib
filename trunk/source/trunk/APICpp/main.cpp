@@ -349,12 +349,12 @@ void useMC()
             }
         }
 
-        else if(string(option).compare("sample ROUTER") == 0){
+        else if(string(option).compare("sample ENDPOINT") == 0){
 
             string sample = "";
             API_IO_Sample io_sample;
 
-            if (mc->accessNodeIOSample("ROUTER", &io_sample)){
+            if (mc->accessNodeIOSample("END POINT", &io_sample)){
 
                 cout << "DEBUG: IO Frame length: " << io_sample.getLength() << endl;
                 sample = io_sample.getAnalogSamples().begin()->second;
@@ -363,7 +363,7 @@ void useMC()
 
             }
             else
-                cout << "No Sample found for ROUTER node." << endl;
+                cout << "No Sample found for END POINT node." << endl;
         }
 
         else if(string(option).compare("response") == 0){
@@ -412,7 +412,7 @@ void useMC()
 
                     case ZB_MonitoringAndControl::UNSIGNED_INT:
 
-                        cout << (unsigned int)response.parameterValue << endl;
+                        cout << *(unsigned int*)response.parameterValue << endl;
                         break;
 
                     case ZB_MonitoringAndControl::STRING:
@@ -436,6 +436,10 @@ void useMC()
             }
         }
 
+        else if (string(option).find("discover") != string::npos)
+
+            mc->discoverNetworkNodes();
+
         else if (string(option).compare("quit") == 0){
 
             delete mc;
@@ -447,9 +451,9 @@ void useMC()
 
  int main()
  {
-     unitTesting();
+     //unitTesting();
      //useTXRX();
-     //useMC();
+     useMC();
 
      return 0;
  }

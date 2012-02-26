@@ -33,8 +33,16 @@ class ZB_Frame_TXRX: public Thread
 {
     public:
 
-        /** Default constructor */
-        ZB_Frame_TXRX();
+        enum API_MODE {
+            NON_ESCAPED = 1,
+            ESCAPED
+        };
+
+        /** Default constructor
+         * \param api_mode A API_MODE enum value indicating if the received and sent frames should
+         *                 be treated as non-escaped (ATAP=1 - default value) of escaped (ATAP=2) control characters.
+         */
+        ZB_Frame_TXRX(API_MODE api_mode=NON_ESCAPED);
 
         /** Copy constructor
          *  \param other Object to copy from
@@ -114,6 +122,16 @@ class ZB_Frame_TXRX: public Thread
          */
         void sendMessage(std::string message);
 
+        /** Remove escape control characters from received frame
+         * \param frame An STL string holding the frame to be stripped out of espape control characteres
+         */
+         void removeEscapes(std::string& frame);
+
+         /** Add escape control characters to outgoing frame
+         * \param frame An STL string holding the frame to be populated with espape control characteres
+         */
+         void addEscapes(std::string& frame);
+
         /** This method is the implementation of the abstract Thread::job.
          * It is this method who will actually implement whatever the thread is suppose to do. In this case, it shall gather in the message pool
          * whatever messages arriving at the serial port.
@@ -124,6 +142,7 @@ class ZB_Frame_TXRX: public Thread
 
         bool run_; //!< A boolean value for signalling the thread funtion to stop monitoring the XBee radio device for messages.
         int serial_fd_; //!< An integer value to hold the file descriptor to be used for reading and writing to the serial port where the XBee radio is connected.
+        API_MODE api_mode_; //!< An enum value indicating if the API MODE being used is with escaped control characters or without. The default value is '1' (without escaped characters).
         std::string device_; //!< A string holding the value / path of the device associated to the connected XBee radio.
         std::vector<std::string> messagePool_; //!< A vector of strings holding the pool of messages received from the connected XBee radio that haven't been processed yet.
 

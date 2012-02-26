@@ -86,7 +86,7 @@ bool API_IO_Sample::parseFrame(string frame)
     // In this particular case the AND works much like a intersection between two groups, i.e,
     // only the bits position that are both set to 1 are high.
     masked = digitalChannelMask_ & digitalPinsMask_;
-    // If the bitwise AND result in a value larger than 0, than it means that at least on of the pins
+    // If the bitwise AND result in a value larger than 0, than it means that at least one of the pins
     // configured to received digital samples is reading high.
     if (masked > 0){
 

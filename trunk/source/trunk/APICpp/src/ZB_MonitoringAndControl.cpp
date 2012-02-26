@@ -424,7 +424,7 @@ void ZB_MonitoringAndControl::job()
                                 nodeSample_map_[nodeList_[i]->getNodeIdent()] = io_sample;
                                 cout << "DEBUG: IO Frame length: " << io_sample->getLength() << endl;
                                 cout << "From map:" << endl << "\t";
-                                map<string, API_IO_Sample*>::iterator it = nodeSample_map_.find("ROUTER");
+                                map<string, API_IO_Sample*>::iterator it = nodeSample_map_.find("END POINT");
                                 if (it != nodeSample_map_.end()){
 
                                     cout << it->second->getLength() << endl;
