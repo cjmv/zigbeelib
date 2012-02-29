@@ -1,10 +1,11 @@
 ///
-/// The ZB_Frame_TXRX class.
+/// The ZB_MonitoringAndControl class.
 /// This class purpose is to provide high level facilities for interpreting the output comming from the device interface
 /// associated to the XBee radio, as well as to issue typical query AT commands to that same XBee.
 /// To enable continuous monitoring and control of a XBee controller and eventually a mesh network, the listening
 /// process for new frames shall be done in a thread.
 ///
+/// \bug Sometimes while deleting a ZB_MonitoringAndControl pointer it will hang indefenitely.
 /*
  * $Author$
  * $Id$
@@ -45,11 +46,18 @@ class ZB_MonitoringAndControl: public Thread
             void* parameterValue;
         };
 
-        /** Default constructor
+        /** Constructor. By default API mode will be set to use non-escaped control characters (ATAP=1)
          * \param device A string holding the tty interface that shall be used to send and receive ZigBee Frames
          *        from / to  controller.
          */
         ZB_MonitoringAndControl(std::string device);
+
+        /** Default constructor
+         * \param device A string holding the tty interface that shall be used to send and receive ZigBee Frames
+         *        from / to  controller.
+         * \param api_mode A enumerated type holding the API mode to use: ESCAPED (ATAP=2) or NON-ESCAPED (ATAP=1)
+         */
+        ZB_MonitoringAndControl(ZB_Frame_TXRX::API_MODE api_mode, std::string device);
 
         /** Copy constructor
          *  \param other Object to copy from
