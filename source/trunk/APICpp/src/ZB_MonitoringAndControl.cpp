@@ -27,6 +27,20 @@ ZB_MonitoringAndControl::ZB_MonitoringAndControl(string device): Thread()
         return 0;*/
 }
 
+// Constructor
+ZB_MonitoringAndControl::ZB_MonitoringAndControl(ZB_Frame_TXRX::API_MODE api_mode, string device): Thread()
+{
+    //ctor
+    if(device.compare("") != 0){
+        txrx_ = new ZB_Frame_TXRX(api_mode, device);
+        frameId_ = 1;
+        run_ = false;
+    }
+        //return this;
+    /*else
+        return 0;*/
+}
+
 ZB_MonitoringAndControl::~ZB_MonitoringAndControl()
 {
     //dtor

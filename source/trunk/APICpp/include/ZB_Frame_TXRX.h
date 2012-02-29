@@ -6,6 +6,7 @@
 /// To enable continuous monitoring and control of a XBee controller and eventually a mesh network, the listening
 /// process for new frames shall be done in a thread.
 ///
+/// \bug The read call is always locking iven if VMIN and VTIME are set.
 /*
  * $Author$
  * $Id$
@@ -38,21 +39,30 @@ class ZB_Frame_TXRX: public Thread
             ESCAPED
         };
 
-        /** Default constructor
+        /** Default constructor.
+         * By default the API mode is set to NON_ESCAPED (ATAP=1).
+         * \sa API_MODE
+         */
+        ZB_Frame_TXRX();
+
+        /** Constructor for instantiation of a new ZB_Frame_TXRX object for a given interface device.
+         * By default the API mode is set to NON_ESCAPED (ATAP=1).
+         * \param device A string holding the value / path of the device to use.
+         * \sa API_MODE
+         */
+        ZB_Frame_TXRX(std::string device);
+
+        /** Constructor for instantiation of a new ZB_Frame_TXRX object for a given interface device.
          * \param api_mode A API_MODE enum value indicating if the received and sent frames should
          *                 be treated as non-escaped (ATAP=1 - default value) of escaped (ATAP=2) control characters.
+         * \param device A string holding the value / path of the device to use.
          */
-        ZB_Frame_TXRX(API_MODE api_mode=NON_ESCAPED);
+        ZB_Frame_TXRX(API_MODE api_mode, std::string device);
 
         /** Copy constructor
          *  \param other Object to copy from
          */
         ZB_Frame_TXRX(const ZB_Frame_TXRX& other);
-
-        /** Constructor for instantiation of a new ZB_Frame_TXRX object for a given interface device.
-         * \param device A string holding the value / path of the device to use.
-         */
-        ZB_Frame_TXRX(std::string device);
 
         /** Default destructor */
         virtual ~ZB_Frame_TXRX();
@@ -70,12 +80,26 @@ class ZB_Frame_TXRX: public Thread
             return device_;
         }
 
+        /** Get method to access the api mode member variable.
+         * \return A API_MODE enumerated type with the current value of api_mode_.
+         */
+         inline API_MODE getAPIMode(){
+             return api_mode_;
+         }
+
         /** Set method for updating the value of device
          * \param device A string holding the new value to set.
          */
         inline void setDevice(std::string device){
             device_ = device;
         }
+
+        /** Set method for updating the value of API mode.
+         * \param api_mode An API_MODE enumerated type holding the value to set.
+         */
+         inline void setAPImode(API_MODE api_mode){
+             api_mode_ = api_mode;
+         }
 
         /** Get method to access the message pool member variable.
          * \return A vector fo strings, holding the current pool of messages

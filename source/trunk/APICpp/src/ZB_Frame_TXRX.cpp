@@ -14,7 +14,22 @@ using namespace std;
 
 
 // Default constructor
-ZB_Frame_TXRX::ZB_Frame_TXRX(API_MODE api_mode): Thread(), api_mode_(api_mode)
+ZB_Frame_TXRX::ZB_Frame_TXRX(): Thread()
+{
+    api_mode_ = NON_ESCAPED;
+    device_ = "";
+    run_ = false;
+}
+
+// Constructor
+ZB_Frame_TXRX::ZB_Frame_TXRX(string device): Thread(), device_(device)
+{
+    api_mode_ = NON_ESCAPED;
+    run_ = false;
+}
+
+// Constructor
+ZB_Frame_TXRX::ZB_Frame_TXRX(API_MODE api_mode, string device): Thread(), api_mode_(api_mode), device_(device)
 {
     run_ = false;
 }
@@ -23,12 +38,6 @@ ZB_Frame_TXRX::ZB_Frame_TXRX(API_MODE api_mode): Thread(), api_mode_(api_mode)
 ZB_Frame_TXRX::ZB_Frame_TXRX(const ZB_Frame_TXRX& other)
 {
     //copy ctor
-}
-
-// Constructor
-ZB_Frame_TXRX::ZB_Frame_TXRX(string device): Thread(), device_(device)
-{
-    run_ = false;
 }
 
 // Default destructor
