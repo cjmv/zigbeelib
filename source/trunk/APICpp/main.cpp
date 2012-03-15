@@ -366,6 +366,23 @@ void useMC()
                 cout << "No Sample found for END POINT node." << endl;
         }
 
+        else if(string(option).compare("sample ROUTER") == 0){
+
+            string sample = "";
+            API_IO_Sample io_sample;
+
+            if (mc->accessNodeIOSample("ROUTER", &io_sample)){
+
+                cout << "DEBUG: IO Frame length: " << io_sample.getLength() << endl;
+                sample = io_sample.getAnalogSamples().begin()->second;
+
+                getTemperatureCelsius((unsigned char)sample[0]*0x100 + (unsigned char)sample[1]);
+
+            }
+            else
+                cout << "No Sample found for ROUTER node." << endl;
+        }
+
         else if(string(option).compare("response") == 0){
 
             ZB_MonitoringAndControl::Resumed_AT_Response response;
@@ -432,7 +449,7 @@ void useMC()
 
             if(string(option).find("NI") != string::npos){
 
-                mc->setNodeIdentifier(mc->int2Hex((unsigned int)0x479c), "ROUTER");
+                mc->setNodeIdentifier(mc->int2Hex((unsigned int)0xfcd7), "ROUTER");
             }
         }
 

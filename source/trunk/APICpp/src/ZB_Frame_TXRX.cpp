@@ -124,7 +124,7 @@ void ZB_Frame_TXRX::job()
 	{
 		nBytes = read(serial_fd_, buff, 255);
 		if(nBytes > 0){
-			//cout << "nBytes read: " << nBytes << endl;
+			cout << "nBytes read: " << dec << nBytes << endl;
 			for(int i = 0; i < nBytes; i++)
 			{
 			    if(!found_size && message.length() > 3){
