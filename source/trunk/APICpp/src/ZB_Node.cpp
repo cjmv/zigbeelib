@@ -147,6 +147,30 @@ ostream& operator << (ostream& out, const ZB_Node& node)
     return out;
 }
 
+bool operator == (const ZB_Node& node1, const ZB_Node& node2)
+{
+    if(node1.deviceType_ != node2.deviceType_)
+        return false;
+    else if(node1.manufacturerIdent_ != node2.manufacturerIdent_)
+        return false;
+    else if(node1.networkAddr_ != node2.networkAddr_)
+        return false;
+    else if(node1.nodeIdent_ != node2.nodeIdent_)
+        return false;
+    else if(node1.parentNetworkAddr_ != node2.parentNetworkAddr_)
+        return false;
+    else if(node1.profileIdent_ != node2.profileIdent_)
+        return false;
+    else if(node1.serialNumberHigh_ != node2.serialNumberHigh_)
+        return false;
+    else if(node1.serialNumberLow_ != node2.serialNumberLow_)
+        return false;
+    else if(node1.status_ != node2.status_)
+        return false;
+    else
+        return true;
+}
+
 // parse node identification method
 bool ZB_Node::parseNodeIdentification(string responseParameter)
 {

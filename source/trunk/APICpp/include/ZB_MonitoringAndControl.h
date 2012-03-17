@@ -153,6 +153,13 @@ class ZB_MonitoringAndControl: public Thread
          */
         std::string int2Hex(unsigned int number);
 
+        /** This method purpose is to update the Network Node List with a new given Node. This means that
+         * the provided node will be added or simply updated (if its settings have been changed) on the current Node List.
+         * \param node A pointer to ZB_Node holding all information, of a given node, related to a AT Node Discovery command answer.
+         * \note The node pointer shall be dealt with within the method. Do not try to delete or change the pointer.
+         */
+        void updateNodeList(ZB_Node* node);
+
     protected:
 
     private:
