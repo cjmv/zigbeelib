@@ -99,6 +99,12 @@ class ZB_Node
          */
         friend std::ostream& operator << (std::ostream& out, const ZB_Node& node);
 
+        /** == Operator overloading to compare all node information.
+         * \param node1 Node to compare with node2
+         * \param node2 Node to compare with node1
+         */
+         friend bool operator == (const ZB_Node& node1, const ZB_Node& node2);
+
 
         /** Get method to access node network address.
          * \return A string holding the value of the networkAddress_ member variable.

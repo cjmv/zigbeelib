@@ -506,7 +506,7 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
             /* Depending on the command issued, the parameter value should get different treatment. For this particular case
              * the AT command was BD, so BD parameter ranges apply.
              */
-            atCommand = API_AT_CommandResponse::ATCommands(((unsigned  char)at_response->getATCommand()[0]*0x100) + (unsigned  char)at_response->getATCommand()[1]);
+            atCommand = API_AT_CommandResponse::ATCommands(((unsigned char)at_response->getATCommand()[0]*0x100) + (unsigned  char)at_response->getATCommand()[1]);
 
             if (atCommand == API_AT_CommandResponse::SERIAL_CRE_INTERFACE_DATA_RATE){
 
@@ -520,7 +520,8 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
             }
             else if (atCommand == API_AT_CommandResponse::EXEC_CRE_NODE_DISCOVERY){
 
-                //ZB_Node* node;
+                updateNodeList(new ZB_Node(at_response->getParameterValue()));
+                //ZB_Node* node = new ZB_Node(at_response->getParameterValue());
                 //node = new ZB_Node(at_response->getParameterValue());
 
                 /*if(nodeArray[0] == 0)
@@ -528,7 +529,6 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
                 else
                     nodeArray[1] = node;*/
 
-                nodeList_.push_back(new ZB_Node(at_response->getParameterValue()));
                 /*cout << "FROM ARRAY..." << endl;
 
                 if(nodeArray[1] == 0)
@@ -612,6 +612,34 @@ string ZB_MonitoringAndControl::int2Hex(unsigned int number)
 	}
 
 	return hexNumber;
+}
+
+// updateNodeList method
+void ZB_MonitoringAndControl::updateNodeList(ZB_Node* node)
+{
+    bool found = false, updated = false;
+
+    for (unsigned int i = 0; i < nodeList_.size(); i++){
+
+        if (nodeList_[i]->getNetworkAddr() == node->getNetworkAddr()){
+
+            found = true;
+            if(*nodeList_[i] == *node)
+                break;
+
+            else{
+                nodeList_.erase(nodeList_.begin() + i);
+                nodeList_.push_back(node);
+                updated = true;
+                break;
+            }
+        }
+    }
+
+    if(!found)
+        nodeList_.push_back(node);
+    else if(found && !updated)
+        delete node;
 }
 
 // biCount method

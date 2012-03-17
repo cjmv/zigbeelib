@@ -105,8 +105,7 @@ void ZB_Frame_TXRX::job()
     cfmakeraw(&tio);
     cfsetospeed(&tio,B9600);            // 9600 baud
     cfsetispeed(&tio,B9600);            // 9600 baud
-    tio.c_cc[VMIN]=1;
-    tio.c_cc[VTIME]=5;
+    tio.c_cc[VMIN]=0; tio.c_cc[VTIME]=10; // Wait one second (10 * 0.1s) or 1 byte to return from read.
 
     serial_fd_ = open(device_.c_str(), O_RDWR); // device is normally something like "/dev/ttyUSB0"
 
