@@ -325,7 +325,7 @@ void useMC()
 
     mc->startMonitoring();
     sleep(2);
-    frameID = mc->discoverNetworkNodes();
+    //frameID = mc->discoverNetworkNodes();
 
     while(true){
 
@@ -429,12 +429,12 @@ void useMC()
 
                     case ZB_MonitoringAndControl::UNSIGNED_INT:
 
-                        cout << *(unsigned int*)response.parameterValue << endl;
+                        cout << *(unsigned int*)response.parameterValue.ui_value << endl;
                         break;
 
                     case ZB_MonitoringAndControl::STRING:
 
-                        cout << (char*)response.parameterValue << endl;
+                        cout << response.s_value << endl;
                         break;
 
                     default:
@@ -451,11 +451,24 @@ void useMC()
 
                 mc->setNodeIdentifier(mc->int2Hex((unsigned int)0xfcd7), "ROUTER");
             }
+            else if (string(option).find("ST") != string::npos){
+
+                mc->setTimeBeforeSleep("END POINT", 2000);
+            }
+            else if (string(option).find("IR") != string::npos){
+
+                mc->setIOSampleRate("END POINT", 3000);
+            }
         }
 
         else if (string(option).find("discover") != string::npos)
 
             mc->discoverNetworkNodes();
+
+        else if (string(option).find("write") != string::npos)
+
+            // Writing changes to router.
+            mc->writeChanges("END POINT");
 
         else if (string(option).compare("quit") == 0){
 
