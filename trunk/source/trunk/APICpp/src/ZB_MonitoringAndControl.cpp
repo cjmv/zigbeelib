@@ -21,6 +21,7 @@ ZB_MonitoringAndControl::ZB_MonitoringAndControl(string device): Thread()
         txrx_ = new ZB_Frame_TXRX(device);
         frameId_ = 1;
         run_ = false;
+        auto_update_nodes_ = true;
     }
         //return this;
     /*else
@@ -35,6 +36,7 @@ ZB_MonitoringAndControl::ZB_MonitoringAndControl(ZB_Frame_TXRX::API_MODE api_mod
         txrx_ = new ZB_Frame_TXRX(api_mode, device);
         frameId_ = 1;
         run_ = false;
+        auto_update_nodes_ = true;
     }
         //return this;
     /*else
@@ -116,19 +118,16 @@ bool ZB_MonitoringAndControl::accessNodeIOSample(string node, API_IO_Sample* io_
 }
 
 // Discover network nodes method
-unsigned char ZB_MonitoringAndControl::discoverNetworkNodes()
+unsigned char ZB_MonitoringAndControl::discoverNetworkNodes(string NI)
 {
-    API_AT_Command *atCommand = new API_AT_Command(frameId_, "ND", "");
-    Resumed_AT_Response resumedResponse;
+    //API_AT_Command *atCommand = new API_AT_Command(frameId_, "ND", NIorMY);
+    API_AT_Command *atCommand = new API_AT_Command(frameId_, int2Hex((unsigned int)API_AT_Command::EXEC_CRE_NODE_DISCOVERY), NI);
+    /*Resumed_AT_Response resumedResponse;
     resumedResponse.commandStatus = API_AT_CommandResponse::UNKOWN_STATUS;
     resumedResponse.parameterValueType = NO_TYPE;
-    resumedResponse.parameterValue = 0;
+    resumedResponse.parameterValue = 0;*/
 
     txrx_->sendMessage(atCommand->getFrame());
-
-    /*lock();
-    commandsResponse_buffer_[frameId_] = resumedResponse; // Populating the map with a new frame ID regarding a AT command.
-    unlock();*/
 
     delete atCommand;
     return incrementFrameID() - 0x1;
@@ -139,11 +138,8 @@ unsigned char ZB_MonitoringAndControl::setSleepMode(string networkAddr, API_AT_C
 {
     API_AT_RemoteCommand *at_remoteCommand;
     string parameter = "";
-    //Resumed_AT_Response resumedResponse;
+
     parameter.append(1, sleepMode);
-    /*resumedResponse.commandStatus = API_AT_CommandResponse::UNKOWN_STATUS;
-    resumedResponse.parameterValueType = NO_TYPE;
-    resumedResponse.parameterValue = 0;*/
 
     if(networkAddr.compare("") == 0){
         cout << "No node network address provided!" << endl;
@@ -152,13 +148,9 @@ unsigned char ZB_MonitoringAndControl::setSleepMode(string networkAddr, API_AT_C
     else{
 
         at_remoteCommand = new API_AT_RemoteCommand(frameId_, "SM", parameter);
-        setRemoteAddressing(networkAddr, at_remoteCommand);
+        setRemoteAddressing(at_remoteCommand, networkAddr);
         at_remoteCommand->setRemoteCommandOption(API_AT_RemoteCommand::APPLY_CH);
         txrx_->sendMessage(at_remoteCommand->getFrame());
-
-        /*lock();
-        commandsResponse_buffer_[frameId_] = resumedResponse; // Populating the map with a new frame ID regarding a AT command.
-        unlock();*/
 
         delete at_remoteCommand;
         return incrementFrameID() - 0x1;
@@ -190,7 +182,7 @@ unsigned char ZB_MonitoringAndControl::setNumberOfSleepPeriods(string networkAdd
 
         API_AT_RemoteCommand *at_remoteCommand;
         at_remoteCommand = new API_AT_RemoteCommand(frameId_, "SN", int2Hex(numberOfPeriods));
-        setRemoteAddressing(networkAddr, at_remoteCommand);
+        setRemoteAddressing(at_remoteCommand, networkAddr);
         at_remoteCommand->setRemoteCommandOption(API_AT_RemoteCommand::APPLY_CH);
 
         txrx_->sendMessage(at_remoteCommand->getFrame());
@@ -220,7 +212,32 @@ unsigned char ZB_MonitoringAndControl::setSleepPeriod(string networkAddr, unsign
 
         API_AT_RemoteCommand *at_remoteCommand;
         at_remoteCommand = new API_AT_RemoteCommand(frameId_, "SP", int2Hex(sleepPeriod));
-        setRemoteAddressing(networkAddr, at_remoteCommand);
+        setRemoteAddressing(at_remoteCommand, networkAddr);
+        at_remoteCommand->setRemoteCommandOption(API_AT_RemoteCommand::APPLY_CH);
+
+        txrx_->sendMessage(at_remoteCommand->getFrame());
+
+        delete at_remoteCommand;
+        return incrementFrameID() - 0x1;
+    }
+}
+
+unsigned char ZB_MonitoringAndControl::setTimeBeforeSleep(string networkAddr, unsigned int timeBeforeSleep)
+{
+    if(networkAddr.compare("") == 0){
+
+        API_AT_Command *atCommand;
+        atCommand = new API_AT_Command(frameId_, "ST", int2Hex(timeBeforeSleep));
+        txrx_->sendMessage(atCommand->getFrame());
+
+        delete atCommand;
+        return incrementFrameID() - 0x1;
+    }
+    else{
+
+        API_AT_RemoteCommand *at_remoteCommand;
+        at_remoteCommand = new API_AT_RemoteCommand(frameId_, "ST", int2Hex(timeBeforeSleep));
+        setRemoteAddressing(at_remoteCommand, networkAddr);
         at_remoteCommand->setRemoteCommandOption(API_AT_RemoteCommand::APPLY_CH);
 
         txrx_->sendMessage(at_remoteCommand->getFrame());
@@ -248,7 +265,7 @@ unsigned char ZB_MonitoringAndControl::setSleepOptions(string networkAddr, API_A
     else{
 
         at_remoteCommand = new API_AT_RemoteCommand(frameId_, "SO", parameter);
-        setRemoteAddressing(networkAddr, at_remoteCommand);
+        setRemoteAddressing(at_remoteCommand, networkAddr);
         at_remoteCommand->setRemoteCommandOption(API_AT_RemoteCommand::APPLY_CH);
         txrx_->sendMessage(at_remoteCommand->getFrame());
 
@@ -266,8 +283,7 @@ unsigned char ZB_MonitoringAndControl::setNodeIdentifier(string networkAddr, str
 {
     if(networkAddr.compare("") == 0){
 
-        API_AT_Command *atCommand;
-        atCommand = new API_AT_Command(frameId_, "NI", nodeIdent);
+        API_AT_Command *atCommand = new API_AT_Command(frameId_, "NI", nodeIdent);
         txrx_->sendMessage(atCommand->getFrame());
 
         delete atCommand;
@@ -277,7 +293,7 @@ unsigned char ZB_MonitoringAndControl::setNodeIdentifier(string networkAddr, str
 
         API_AT_RemoteCommand *at_remoteCommand;
         at_remoteCommand = new API_AT_RemoteCommand(frameId_, "NI", nodeIdent);
-        setRemoteAddressing(networkAddr, at_remoteCommand);
+        setRemoteAddressing(at_remoteCommand, networkAddr);
         at_remoteCommand->setRemoteCommandOption(API_AT_RemoteCommand::APPLY_CH);
 
         txrx_->sendMessage(at_remoteCommand->getFrame());
@@ -293,43 +309,78 @@ unsigned char ZB_MonitoringAndControl::endpointCyclicSleepConfiguration(string n
     return '\0';
 }
 
+unsigned char ZB_MonitoringAndControl::setIOSampleRate(string networkAddr, unsigned int ioSampleRate)
+{
+    if(networkAddr.compare("") == 0){
+
+        return 0x0;
+    }
+    else{
+
+        API_AT_RemoteCommand *at_remoteCommand;
+        at_remoteCommand = new API_AT_RemoteCommand(frameId_, "IR", int2Hex(ioSampleRate));
+        setRemoteAddressing(at_remoteCommand, networkAddr);
+        at_remoteCommand->setRemoteCommandOption(API_AT_RemoteCommand::APPLY_CH);
+
+        txrx_->sendMessage(at_remoteCommand->getFrame());
+
+        delete at_remoteCommand;
+        return incrementFrameID() - 0x1;
+    }
+}
+
+// Send AT remote command method
+unsigned char ZB_MonitoringAndControl::sendATCommand(string networkAddr,
+                                                     string addr,
+                                                     string atCommand,
+                                                     string parameter,
+                                                     API_AT_RemoteCommand::RemoteCommandOption option)
+{
+    if(networkAddr.compare("") == 0 && addr.compare("") == 0){
+
+        API_AT_Command *atLocalCommand = new API_AT_Command(frameId_, atCommand, parameter);
+        txrx_->sendMessage(atLocalCommand->getFrame());
+
+        delete atLocalCommand;
+        return incrementFrameID() - 0x1;
+    }
+    else{
+        API_AT_RemoteCommand *at_remoteCommand;
+        at_remoteCommand = new API_AT_RemoteCommand(frameId_, atCommand, parameter);
+        setRemoteAddressing(at_remoteCommand, networkAddr, addr);
+        at_remoteCommand->setRemoteCommandOption(option);
+
+        txrx_->sendMessage(at_remoteCommand->getFrame());
+
+        delete at_remoteCommand;
+        return incrementFrameID() - 0x1;
+    }
+}
+
 // writeChanges method
 unsigned char ZB_MonitoringAndControl::writeChanges(string networkAddr)
 {
-    API_AT_Command *atCommand;
-    /*Resumed_AT_Response resumedResponse;
-    resumedResponse.commandStatus = API_AT_CommandResponse::UNKOWN_STATUS;
-    resumedResponse.parameterValueType = NO_TYPE;
-    resumedResponse.parameterValue = 0;*/
-
-    atCommand = new API_AT_Command(frameId_, "WR", "");
-
     if(networkAddr.compare("") == 0){
 
-        txrx_->sendMessage(atCommand->getFrame());
+        API_AT_Command *atCommand = new API_AT_Command(frameId_, "WR", "");
 
-        /*lock();
-        commandsResponse_buffer_[frameId_] = resumedResponse;
-        unlock();*/
+        txrx_->sendMessage(atCommand->getFrame());
 
         delete atCommand;
         return incrementFrameID() - 0x1;
     }
     else{
 
-        API_AT_RemoteCommand *at_remoteCommand;
-        at_remoteCommand = dynamic_cast<API_AT_RemoteCommand*>(atCommand);
+        return sendATCommand(networkAddr, "", "WR");
+        /*API_AT_RemoteCommand *at_remoteCommand;
+        at_remoteCommand = new API_AT_RemoteCommand(frameId_, "WR", "");
         setRemoteAddressing(networkAddr, at_remoteCommand);
         at_remoteCommand->setRemoteCommandOption(API_AT_RemoteCommand::APPLY_CH);
 
         txrx_->sendMessage(at_remoteCommand->getFrame());
 
-        /*lock();
-        commandsResponse_buffer_[frameId_] = resumedResponse;
-        unlock();*/
-
         delete at_remoteCommand;
-        return incrementFrameID() - 0x1;
+        return incrementFrameID() - 0x1;*/
     }
 }
 
@@ -409,6 +460,7 @@ void ZB_MonitoringAndControl::job()
 
                 case API_Frame::IO_RX_SAMPLE:
                 {
+                    bool newNodeFound = true;
                     string sample = "";
                     API_IO_Sample* io_sample;
 
@@ -419,35 +471,83 @@ void ZB_MonitoringAndControl::job()
                     io_sample = dynamic_cast<API_IO_Sample*>(frame);
                     sample = io_sample->getAnalogSamples().begin()->second;
 
-                    if(!nodeList_.empty()){
+                    cout << endl << "Source Network Address:" << hex;
+                    for(unsigned int x = 0; x < io_sample->getSourceNetworkAddress().size(); x++){
+                        cout << (int)(unsigned char)io_sample->getSourceNetworkAddress()[x] << " ";
+                    }
+                    cout << endl;
 
-                        //cout << "Comparing..." << endl;
-                        for(unsigned int i = 0; i < nodeList_.size(); i++){
+                    if(auto_update_nodes_){
 
-                            /*cout << *networkNodes[i];
+                        if(!nodeList_.empty()){
 
-                            cout << endl << "Source Network Address:" << hex;
-                            for(unsigned int x = 0; x < io_sample->getSourceNetworkAddress().size(); x++){
-                                cout << (int)(unsigned char)io_sample->getSourceNetworkAddress()[x] << " ";
+                            //cout << "Comparing..." << endl;
+                            for(unsigned int i = 0; i < nodeList_.size(); i++){
+
+                                /*cout << *networkNodes[i];
+
+                                cout << endl << "Source Network Address:" << hex;
+                                for(unsigned int x = 0; x < io_sample->getSourceNetworkAddress().size(); x++){
+                                    cout << (int)(unsigned char)io_sample->getSourceNetworkAddress()[x] << " ";
+                                }
+
+                                cout << dec << endl;*/
+
+                                if(nodeList_[i]->getNetworkAddr().compare(io_sample->getSourceNetworkAddress()) == 0){
+
+                                    newNodeFound = false;
+                                    nodeSample_map_[nodeList_[i]->getNodeIdent()] = io_sample;
+                                    cout << "DEBUG: IO Frame length: " << io_sample->getLength() << endl;
+                                    //cout << "From map:" << endl << "\t";
+                                    /*map<string, API_IO_Sample*>::iterator it = nodeSample_map_.find("END POINT");
+                                    if (it != nodeSample_map_.end()){
+
+                                        cout << it->second->getLength() << endl;
+                                    }
+                                    break;*/
+                                    cout << "Source: " << nodeList_[i]->getNodeIdent() << endl;
+                                }
                             }
 
-                            cout << dec << endl;*/
+                            // I'll have to check the NI from the sourceNetworkAddress and only then
+                            // call the discoverNetworkNodes with the NI response as the parameter.
+                            if(newNodeFound){
 
-                            if(nodeList_[i]->getNetworkAddr().compare(io_sample->getSourceNetworkAddress()) == 0){
+                                cout << "DEBUG: New node found!..." << endl;
 
-                                nodeSample_map_[nodeList_[i]->getNodeIdent()] = io_sample;
-                                cout << "DEBUG: IO Frame length: " << io_sample->getLength() << endl;
-                                cout << "From map:" << endl << "\t";
-                                map<string, API_IO_Sample*>::iterator it = nodeSample_map_.find("END POINT");
-                                if (it != nodeSample_map_.end()){
+                                map<string, unsigned char>::iterator it = internalAT_frameId_map_.find(io_sample->getSourceNetworkAddress());
+                                // Check if there's already a request for Node identification for this source network address.
+                                if(it != internalAT_frameId_map_.end()){
 
-                                    cout << it->second->getLength() << endl;
+                                    cout << "DEBUG: AT NI command already issued for this address." << endl;
+
+                                    Resumed_AT_Response atResponse;
+
+                                    // Get the resumed AT response regarding the parameterized frameId (it->second)
+                                    cout << "DEBUG: Checking for AT response..." << flush;
+                                    if(retrieveCommandsResponseBuffer(it->second, atResponse)){
+                                        // Issue AT ND (Node Discovery) command for the retrieved NI value from the node.
+                                        cout << "FOUND!" << endl << "DEBUG: Issuing AT ND for " << atResponse.s_value << endl;
+                                        discoverNetworkNodes(atResponse.s_value);
+                                    }
+                                    else
+                                        cout << "NOT FOUND!" << endl;
                                 }
-                                break;
-                                //cout << "Source: " << nodeList_[i]->getNodeIdent() << endl;
+                                // If no call to AT NI has been issued for this node, send it and add an entry
+                                // to the internal map.
+                                else{
+                                    cout << "DEBUG: Issuing AT NI command..." << endl;
+                                    //internalAT_frameId_map_[io_sample->getSourceNetworkAddress()] = setNodeIdentifier(io_sample->getSourceNetworkAddress());
+                                    internalAT_frameId_map_[io_sample->getSourceNetworkAddress()] = sendATCommand(io_sample->getSourceNetworkAddress(),
+                                                                                                                  io_sample->getSourceAddress(),
+                                                                                                                  "NI");
+                                }
                             }
                         }
+                        else
+                            discoverNetworkNodes();
                     }
+
 
                     //getTemperatureCelsius((unsigned char)sample[0]*0x100 + (unsigned char)sample[1]);
 
@@ -508,54 +608,52 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
              */
             atCommand = API_AT_CommandResponse::ATCommands(((unsigned char)at_response->getATCommand()[0]*0x100) + (unsigned  char)at_response->getATCommand()[1]);
 
-            if (atCommand == API_AT_CommandResponse::SERIAL_CRE_INTERFACE_DATA_RATE){
+            switch(atCommand)
+            {
+                case API_AT_CommandResponse::SERIAL_CRE_INTERFACE_DATA_RATE:
+                {
+                    Resumed_AT_Response resumedATResponse;
+                    resumedATResponse.commandStatus = API_AT_CommandResponse::CommandStatus(at_response->getCommandStatus());
+                    resumedATResponse.parameterValueType = UNSIGNED_INT;
+                    resumedATResponse.parameterValue.ui_value = at_response->get_ATBD_Value();
 
-                Resumed_AT_Response resumedATResponse;
-                resumedATResponse.commandStatus = API_AT_CommandResponse::CommandStatus(at_response->getCommandStatus());
-                resumedATResponse.parameterValueType = UNSIGNED_INT;
-                resumedATResponse.parameterValue = (void*)at_response->get_ATBD_Value();
 
-                commandsResponse_buffer_[at_response->getFrameId()] = resumedATResponse;
+                    commandsResponse_buffer_[at_response->getFrameId()] = resumedATResponse;
 
-            }
-            else if (atCommand == API_AT_CommandResponse::EXEC_CRE_NODE_DISCOVERY){
-
-                updateNodeList(new ZB_Node(at_response->getParameterValue()));
-                //ZB_Node* node = new ZB_Node(at_response->getParameterValue());
-                //node = new ZB_Node(at_response->getParameterValue());
-
-                /*if(nodeArray[0] == 0)
-                    nodeArray[0] = node;
-                else
-                    nodeArray[1] = node;*/
-
-                /*cout << "FROM ARRAY..." << endl;
-
-                if(nodeArray[1] == 0)
-                    cout << *nodeArray[0] << endl;
-                else{
-                    cout << *nodeArray[0] << endl;
-                    cout << *nodeArray[1] << endl;
-                }*/
-                //networkNodes.push_back(ZB_Node(at_response->getParameterValue()));
-                /*cout << "FROM ELEMENT..." << endl;
-                cout << *node << endl;
-                cout << "ELEMENTS ON vector..." << networkNodes.size() << endl;
-                for (unsigned int i = 0; i < networkNodes.size(); i++){
-                    cout << *networkNodes[i] << endl;
-                }*/
-                //cout << networkNodes.back();
-
-                //delete node;
-            }
-            // Otherwise just print the parameter value
-            else{
-
-                cout << "Parameter value: ";
-                for(unsigned int i = 0; i < at_response->getParameterValue().length(); i++){
-
-                    cout << hex << (int)(unsigned char)at_response->getParameterValue()[i];
+                    break;
                 }
+
+                case API_AT_CommandResponse::EXEC_CRE_NODE_DISCOVERY:
+                {
+                    updateNodeList(new ZB_Node(at_response->getParameterValue()));
+
+                    break;
+                }
+
+                case API_AT_CommandResponse::ADDR_CRE_NODE_IDENTIFIER:
+                {
+                    Resumed_AT_Response resumedATResponse;
+                    resumedATResponse.commandStatus = API_AT_CommandResponse::CommandStatus(at_response->getCommandStatus());
+                    resumedATResponse.parameterValueType = STRING;
+                    resumedATResponse.s_value = at_response->getParameterValue();
+
+                    commandsResponse_buffer_[at_response->getFrameId()] = resumedATResponse;
+
+                    cout << "DEBUG: Received response: ADDR_CRE_NODE_IDENTIFIER" << endl
+                    << "Value: " << resumedATResponse.s_value << endl;
+
+                    break;
+                }
+
+                default:
+
+                    cout << "Parameter value: ";
+                    for(unsigned int i = 0; i < at_response->getParameterValue().length(); i++){
+
+                        cout << hex << (int)(unsigned char)at_response->getParameterValue()[i];
+                    }
+
+                    break;
             }
 
             cout << endl;
@@ -564,6 +662,7 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
         }
         case API_AT_CommandResponse::ERROR:
             cout << "ERROR" << endl;
+            cout << "AT Command: " << at_response->getATCommand() << endl;
             break;
 
         case API_AT_CommandResponse::INVALID_COMMAND:
@@ -657,11 +756,11 @@ unsigned int ZB_MonitoringAndControl::bitCount(unsigned int number)
 }
 
 // setRemoteAddressing method
-bool ZB_MonitoringAndControl::setRemoteAddressing(string nodeIdent, API_AT_RemoteCommand* remoteCommand)
+bool ZB_MonitoringAndControl::setRemoteAddressing(API_AT_RemoteCommand* remoteCommand, string nodeIdent, string address)
 {
-    bool found = false;
+    bool set = false;
 
-    cout << "DEBUG: " << remoteCommand->getATCommand() << endl;
+    //cout << "DEBUG: " << remoteCommand->getATCommand() << endl;
 
     lock();
     {
@@ -673,12 +772,19 @@ bool ZB_MonitoringAndControl::setRemoteAddressing(string nodeIdent, API_AT_Remot
 
                  remoteCommand->setDestinationAddress(string(nodeList_[i]->getSerialNumberHigh() + nodeList_[i]->getSerialNumberLow()));
                  remoteCommand->setDestinationNetworkAddress(nodeList_[i]->getNetworkAddr());
-                 found = true;
+                 set = true;
                  break;
             }
         }
     }
     unlock();
 
-    return found;
+    // If current node ins't yet on the node list, use only the (valid?) network address
+    if (!set && nodeIdent.size() == 2 && address.size() == 8){
+        remoteCommand->setDestinationAddress(address);
+        remoteCommand->setDestinationNetworkAddress(nodeIdent);
+        set = true;
+    }
+
+    return set;
 }

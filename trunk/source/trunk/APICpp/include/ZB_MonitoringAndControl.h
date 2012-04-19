@@ -1,11 +1,12 @@
 ///
 /// The ZB_MonitoringAndControl class.
 /// This class purpose is to provide high level facilities for interpreting the output comming from the device interface
-/// associated to the XBee radio, as well as to issue typical query AT commands to that same XBee.
+/// associated to the XBee radio, as well as to issue typical query AT commands to that same XBee. This class can also be
+/// instantiated to enable automatic search for nodes. If this is the case, this class shall gather information for each
+/// existent node in the network on a node list.
 /// To enable continuous monitoring and control of a XBee controller and eventually a mesh network, the listening
 /// process for new frames shall be done in a thread.
 ///
-/// \bug Sometimes while deleting a ZB_MonitoringAndControl pointer it will hang indefenitely.
 /*
  * $Author$
  * $Id$
@@ -31,28 +32,46 @@ class ZB_MonitoringAndControl: public Thread
 {
     public:
 
+        /** An enumerated type to specify the parameter value Type received from an AT response. */
         enum AT_ParameterValue_Type
         {
-            UNSIGNED_INT = 0,
-            UNSIGNED_CHAR,
-            STRING,
-            NO_TYPE
+            UNSIGNED_INT = 0, /// unsigned int
+            UNSIGNED_CHAR, /// unsigned char
+            STRING, /// const char *
+            NO_TYPE /// Default type
         };
 
+        /** A structure to hold a resumed version of an AT response
+         *\sa commandsResponse_buffer_
+         */
         struct Resumed_AT_Response
         {
-            API_AT_CommandResponse::CommandStatus commandStatus;
-            AT_ParameterValue_Type parameterValueType;
-            void* parameterValue;
+            API_AT_CommandResponse::CommandStatus commandStatus; /**< An enumerated value of type CommandStatus to hold
+                                                                  * the AT command status.
+                                                                  *\sa API_AT_CommandResponse::CommandStatus
+                                                                  */
+            AT_ParameterValue_Type parameterValueType; /**< An enumerated value of type AT_ParameterValue_Type that will hold
+                                                        * the type of value to be considered on the parameterValue Union.
+                                                        *\sa AT_ParameterValue_Type
+                                                        *\sa parameterValue
+                                                        */
+
+            union {
+                unsigned int ui_value;
+                unsigned char uc_value;
+            } parameterValue; //!< An union holding the value of the parameter received from the AT response.
+
+            std::string s_value;
         };
 
         /** Constructor. By default API mode will be set to use non-escaped control characters (ATAP=1)
+         *  The auto update node list feature is turned ON (set to "true") by default.
          * \param device A string holding the tty interface that shall be used to send and receive ZigBee Frames
          *        from / to  controller.
          */
         ZB_MonitoringAndControl(std::string device);
 
-        /** Default constructor
+        /** Default constructor. The auto update node list feature is turned ON (set to "true") by default.
          * \param device A string holding the tty interface that shall be used to send and receive ZigBee Frames
          *        from / to  controller.
          * \param api_mode A enumerated type holding the API mode to use: ESCAPED (ATAP=2) or NON-ESCAPED (ATAP=1)
@@ -72,6 +91,21 @@ class ZB_MonitoringAndControl: public Thread
          *  \return A reference to this
          */
         ZB_MonitoringAndControl& operator=(const ZB_MonitoringAndControl& other);
+
+        /** This method lets know if the auto node list update is on.
+         * \return A bolean value in indicating if the auto node list update is on (true) or off (false).
+         */
+        inline bool isAutoUpdateON(){
+            return auto_update_nodes_;
+        }
+
+        /** Set method to update the auto_update_nodes_ member variable.
+         * \param auto_update_nodes A boolean parameter indicating if the auto node list update should be
+         *                          turned on (if true) of off (if false)
+         */
+        inline void setAutoUpdate(bool auto_update_nodes){
+            auto_update_nodes_ = auto_update_nodes;
+        }
 
         /** Get method to access the network node list.
          * \return A STL vector holding the current value of node list member variable.
@@ -117,24 +151,127 @@ class ZB_MonitoringAndControl: public Thread
         /**
          * This method has the purpose to collect the network node list
          * and set it up on the node list member variable.
+         * \param NI An std string holding the value of NI (node identifier) or MY (local address).
+         *               If supplied, only the Node that matches the provided identifier will answer to the
+         *               Node discover command.
          * \return An unsigned char with the frame ID used while sending the AT ND command.
          * \sa nodeList_
          */
-        unsigned char discoverNetworkNodes();
+        unsigned char discoverNetworkNodes(std::string NI = "");
 
+        /**
+         * This method purpose is to set a XBee node sleep mode (SM).
+         * \param networkAddr A STL string holding the value of either the Node Identification (NI) or the
+         *        network address (MY). If an empty string is presented instead, this command shall be issued
+         *        to the controller.
+         * \param sleepMode An enumerated value of type SleepMode holding the sleep mode to set.
+         * \return An unsigned char holding the value of the frameID generated for this AT command.
+         * \sa API_AT_Command::SleepMode
+         */
         unsigned char setSleepMode(std::string networkAddr, API_AT_Command::SleepMode sleepMode);
 
-        unsigned char setNumberOfSleepPeriods(std::string networkAddr, unsigned int numberOfPeriods);
+        /**
+         * This method purpose is to set / get the number of sleep periods (SN) for a given node.
+         * \param networkAddr A STL string holding the value of either the Node Identification (NI) or the
+         *        network address (MY). If an empty string is presented instead, this command shall be issued
+         *        to the controller.
+         * \param numberOfPeriods An unsigne integer holding the number of Periods during which this node should sleep.
+         *                        The default value for this parameter is 0. If no other value is passed to this method
+         *                        the method shall be treated has a query to the node, i.e., the XBee node shall return
+         *                        the recorded value of (SN).
+         * \return An unsigned char holding the value of the frameID generated for this AT command.
+         */
+        unsigned char setNumberOfSleepPeriods(std::string networkAddr, unsigned int numberOfPeriods = 0);
 
+        /**
+         * This method purpose is to set the Sleep period (SP) for a given XBee node.
+         * \param networkAddr A STL string holding the value of either the Node Identification (NI) or the
+         *        network address (MY). If an empty string is presented instead, this command shall be issued
+         *        to the controller.
+         * \param sleepPeriod An unsigned integer holding the value (miliseconds) of the node sleeping period.
+         * \return An unsigned char holding the value of the frameID generated for this AT command.
+         */
         unsigned char setSleepPeriod(std::string networkAddr, unsigned int sleepPeriod);
 
-        unsigned char setSleepOptions(std::string networkAddr, API_AT_Command::SleepOptions);
+        /**
+         * This method purpose is to set the time a XBee node should wait until getting back to sleep (ST).
+         * \param networkAddr A STL string holding the value of either the Node Identification (NI) or the
+         *        network address (MY). If an empty string is presented instead, this command shall be issued
+         *        to the controller.
+         * \param timeBeforeSleep An unsigned integer holding the value (in miliseconds) of time before sleep.
+         * \return An unsigned char holding the value of the frameID generated for this AT command.
+         */
+        unsigned char setTimeBeforeSleep(std::string networkAddr, unsigned int timeBeforeSleep);
 
-        unsigned char setNodeIdentifier(std::string networkAddr, std::string nodeIdent);
+        /**
+         * This method purpose is to set the Sleep Options (SO) in a given XBee node.
+         * \param networkAddr A STL string holding the value of either the Node Identification (NI) or the
+         *        network address (MY). A valid, non-controller address must be provided.
+         * \param sleepOptions An enumerated value of  type SleepOptions to hold the sleep option to be set.
+         * \return An unsigned char holding the value of the frameID generated for this AT command.
+         * \sa API_AT_Command::SleepOptions
+         */
+        unsigned char setSleepOptions(std::string networkAddr, API_AT_Command::SleepOptions sleepOptions);
 
+        /**
+         * This method purpose is to set /get the Node Identifier (NI) value for a given XBee node.
+         * \param networkAddr A STL string holding the value of either the Node Identification (NI) or the
+         *        network address (MY). If an empty string is presented instead, this command shall be issued
+         *        to the controller.
+         * \param nodeIdent A STL string holding the value (human readable) of the node identification.
+         *                  The default value is an empty string. If no other value is given the method will
+         *                  behave as a query, and the XBee node shall return the recorded value of NI.
+         * \return An unsigned char holding the value of the frameID generated for this AT command.
+         */
+        unsigned char setNodeIdentifier(std::string networkAddr, std::string nodeIdent = "");
+
+        /**
+         * This method purpose is to set an end point node cyclic sleep configuration just by providing the
+         * network address / node identification and the sleep period (in miliseconds)
+         * \param networkAddr A STL string holding the value of either the Node Identification (NI) or the
+         *                    network address (MY). This parameter must have a valid address or node
+         *                    identification (non-empty). If an empty string is presented instead, this command
+         *                    shall not be issued.
+         * \param sleepPeriod An unsigned integer holding the value of the sleeping period to set in miliseconds.
+         * \return An unsigned char holding the value of the frameID generated for this AT command.
+         * \todo Not implemented yet.
+         */
         unsigned char endpointCyclicSleepConfiguration(std::string networkAddr, unsigned long sleepPeriod);
 
+        /**
+         * This method purpose is to set / get the IO sample rate (IR) to / from a given XBee node.
+         * \param networkAddr A STL string holding the value of either the Node Identification (NI) or the
+         *                    network address (MY). This parameter must have a valid address or node
+         *                    identification (non-empty). If an empty string is presented instead, this command
+         *                    shall not be issued.
+         * \param ioSampleRate An unsigned integer holding the IO sample rate to be set in miliseconds.
+         *                     The default value of this parameter is 0. If this parameter isn't provided different
+         *                     than 0, this method will query the XBee node for the recorded value of IR.
+         * \return An unsigned char holding the value of the frameID generated for this AT command.
+         */
+        unsigned char setIOSampleRate(std::string networkAddr, unsigned int ioSampleRate = 0);
+
+        /** This method purpose is to provide an easy way to send any AT command.
+         * \param networkAddr An STL string holding the value of the network address to where the AT command
+         *                    should be sent. If empty, the AT command shall be treated as a local command and
+         *                    sent to the controller.
+         * \param atCommand An STL string holding the AT command to be sent.
+         * \param parameter An STL string holding the AT command parameter to be sent. If empty (default value), this AT
+         *                  command shall be used to query the recorded value on the XBee module.
+         * \param option An RemoteCommandOption enumerated type holding the value of the AT remote command option
+         *               to be considered. By default this value is "APPLY_CH". This parameter is ignored if the
+         *               AT command is to be sent locally.
+         * \return An unsigned char holding the value of the frame ID sent with this command.
+         */
+        unsigned char sendATCommand(std::string networkAddr,
+                                    std::string addr,
+                                    std::string atCommand,
+                                    std::string parameter = "",
+                                    API_AT_RemoteCommand::RemoteCommandOption option = API_AT_RemoteCommand::APPLY_CH);
+
         unsigned char writeChanges(std::string networkAddr);
+
+        //unsigned char writeChangesByIdentifier(std::string nodeIdentifier);
 
         /** This method purpose is to instantiate ZB_Frame_TXRX threaded class, so that
          * the controller XBee device can be monitored for new messages.
@@ -149,7 +286,7 @@ class ZB_MonitoringAndControl: public Thread
         /** This method purpose is to convert an integer number to a hexadecimal one (separated in bytes).
          * \param number An unsigned integer holding the value to be converted.
          * \return A STL string holding the converted number into a set of bytes.
-         * \note This type of routines should be contained in a Utils class accessible by all the project.
+         * \todo This type of routines should be contained in a Utils class accessible by all the project.
          */
         std::string int2Hex(unsigned int number);
 
@@ -188,9 +325,14 @@ class ZB_MonitoringAndControl: public Thread
          */
         unsigned int bitCount(unsigned int number);
 
-        bool setRemoteAddressing(std::string nodeIdent, API_AT_RemoteCommand* remoteCommand);
+        bool setRemoteAddressing(API_AT_RemoteCommand* remoteCommand, std::string nodeIdent, std::string address = "");
 
         bool run_; //!< A boolean variable indicating if this class thread should continue to run or not.
+
+        bool auto_update_nodes_; /**< A boolean value indicating if this object should automatically update its node list
+                                  *   with new discovered nodes. If set to false discoverNodes method must be called
+                                  *   so that the node list is updated.
+                                  */
 
         unsigned char frameId_; //!< An unsigned char variable holding the auto-incrementing frame ID to keep track of AT command responses.
 
@@ -207,6 +349,12 @@ class ZB_MonitoringAndControl: public Thread
                                                                                                         */
 
         std::map< std::string, API_IO_Sample*> nodeSample_map_; //!< A STL map with the node identification as the key and the corresponding sample represented by an API_IO_Sample object.
+
+        std::map<std::string, unsigned char> internalAT_frameId_map_;/**< A STL map holding frameId's of internally issued AT commands.
+                                                                      * The key for each frameId, regards the node network address.
+                                                                      * This map was specifically created to support the automatic
+                                                                      * node discovery implemented by this class.
+                                                                      */
 
         ZB_Frame_TXRX* txrx_; //!< A pointer to the ZB_Frame_TXRX, that will provide the interface with the XBee controller device.
 };
