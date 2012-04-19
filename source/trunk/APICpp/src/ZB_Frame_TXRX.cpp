@@ -123,7 +123,7 @@ void ZB_Frame_TXRX::job()
 	{
 		nBytes = read(serial_fd_, buff, 255);
 		if(nBytes > 0){
-			cout << "nBytes read: " << dec << nBytes << endl;
+			//cout << "nBytes read: " << dec << nBytes << endl;
 			for(int i = 0; i < nBytes; i++)
 			{
 			    if(!found_size && message.length() > 3){
@@ -141,7 +141,7 @@ void ZB_Frame_TXRX::job()
                         message_length += 4;
 			        }
 
-			        cout << "Incoming frame size: " << message_length << endl;
+			        //cout << "Incoming frame size: " << message_length << endl;
 			    }
 
 				if(buff[i] == 0x7E && !found_init){
@@ -176,7 +176,7 @@ void ZB_Frame_TXRX::job()
 				// has the expected frame length. If yes, it means the frame is complete.
 				if(found_size && message.length() == message_length){
 
-                    cout << "Adding message to pool (by size)." << endl;
+                    //cout << "Adding message to pool (by size)." << endl;
 				    // If in ESCAPED mode, remove escape control characters from incoming frame.
 					if(api_mode_ == ESCAPED)
                         removeEscapes(message);
