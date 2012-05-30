@@ -61,7 +61,8 @@ class ZB_MonitoringAndControl: public Thread
                 unsigned char uc_value;
             } parameterValue; //!< An union holding the value of the parameter received from the AT response.
 
-            std::string s_value;
+            std::string s_value; /**< A STL string holding the value (if it's type is STRING) of the parameter
++                                     received from the AT response */
         };
 
         /** Constructor. By default API mode will be set to use non-escaped control characters (ATAP=1)
@@ -252,12 +253,17 @@ class ZB_MonitoringAndControl: public Thread
         unsigned char setIOSampleRate(std::string networkAddr, unsigned int ioSampleRate = 0);
 
         /** This method purpose is to provide an easy way to send any AT command.
-         * \param networkAddr An STL string holding the value of the network address to where the AT command
-         *                    should be sent. If empty, the AT command shall be treated as a local command and
+         * \param networkAddr A STL string holding the value of either the Node Identification (NI) or the
+         *                    network address (MY). If empty, the AT command shall be treated as a local command and
          *                    sent to the controller.
-         * \param atCommand An STL string holding the AT command to be sent.
-         * \param parameter An STL string holding the AT command parameter to be sent. If empty (default value), this AT
+         * \param addr A STL string to hold the 64 bits address for this node. If set as an empty string, the method,
+         *             will try to get this address from the network node list, if the networkAddr is provided.
+         * \param atCommand A STL string holding the AT command to be sent.
+         * \param parameter A STL string holding the AT command parameter to be sent. If empty (default value), this AT
          *                  command shall be used to query the recorded value on the XBee module.
+         * \param sleeping A boolean value indicating if this AT command is to be sent to an END POINT node which is set
+         *                 to sleep. The default value is false. If set to true, This AT command to be issued shall be qeued
+         *                 until I/O frame is received from the sleeping node.
          * \param option An RemoteCommandOption enumerated type holding the value of the AT remote command option
          *               to be considered. By default this value is "APPLY_CH". This parameter is ignored if the
          *               AT command is to be sent locally.
@@ -267,8 +273,17 @@ class ZB_MonitoringAndControl: public Thread
                                     std::string addr,
                                     std::string atCommand,
                                     std::string parameter = "",
-                                    API_AT_RemoteCommand::RemoteCommandOption option = API_AT_RemoteCommand::APPLY_CH);
+                                    bool sleeping = false,
+                                    API_AT_RemoteCommand::RemoteCommandOption option = API_AT_RemoteCommand::APPLY_CH
+                                    );
 
+        /** This method purpose is to write (WR) changes set in a given node to non-volatile memory, so that the configuration
+         * is able to persist after a reset.
+         * \param A STL string holding the value of either the Node Identification (NI) or the
+         *                    network address (MY). This parameter must have a valid address or node
+         *                    identification (non-empty). If empty, the AT command shall be treated as a local command and
+         *                    sent to the controller.
+         */
         unsigned char writeChanges(std::string networkAddr);
 
         //unsigned char writeChangesByIdentifier(std::string nodeIdentifier);
@@ -350,11 +365,15 @@ class ZB_MonitoringAndControl: public Thread
 
         std::map< std::string, API_IO_Sample*> nodeSample_map_; //!< A STL map with the node identification as the key and the corresponding sample represented by an API_IO_Sample object.
 
-        std::map<std::string, unsigned char> internalAT_frameId_map_;/**< A STL map holding frameId's of internally issued AT commands.
-                                                                      * The key for each frameId, regards the node network address.
-                                                                      * This map was specifically created to support the automatic
-                                                                      * node discovery implemented by this class.
-                                                                      */
+
+        std::vector<unsigned char> internalAT_frameID_vector_; /**< A STL vector holding the frameIDs of the AT command issued, that should
+                                                                * be dealt internally.
+                                                                */
+
+        std::vector<API_AT_Command*> qeuedAT_Commands_vector_; /** < A STL vector holding the AT Commands queued to be issued. Tipically used, to send
+                                                         * AT commands to sleeping END POINTS. The only requirement is that the Sleeping END POINT
+                                                         * is configured to send an IO Sample as soon as it awakes.
+                                                         */
 
         ZB_Frame_TXRX* txrx_; //!< A pointer to the ZB_Frame_TXRX, that will provide the interface with the XBee controller device.
 };
