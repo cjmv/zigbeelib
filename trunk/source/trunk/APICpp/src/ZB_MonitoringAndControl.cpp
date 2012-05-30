@@ -334,6 +334,7 @@ unsigned char ZB_MonitoringAndControl::sendATCommand(string networkAddr,
                                                      string addr,
                                                      string atCommand,
                                                      string parameter,
+                                                     bool slepping,
                                                      API_AT_RemoteCommand::RemoteCommandOption option)
 {
     if(networkAddr.compare("") == 0 && addr.compare("") == 0){
@@ -350,9 +351,14 @@ unsigned char ZB_MonitoringAndControl::sendATCommand(string networkAddr,
         setRemoteAddressing(at_remoteCommand, networkAddr, addr);
         at_remoteCommand->setRemoteCommandOption(option);
 
-        txrx_->sendMessage(at_remoteCommand->getFrame());
+        if(!slepping)
+        {
+            txrx_->sendMessage(at_remoteCommand->getFrame());
+            delete at_remoteCommand;
+        }
+        else
+            qeuedAT_Commands_vector_.push_back(at_remoteCommand);
 
-        delete at_remoteCommand;
         return incrementFrameID() - 0x1;
     }
 }
@@ -515,9 +521,23 @@ void ZB_MonitoringAndControl::job()
 
                                 cout << "DEBUG: New node found!..." << endl;
 
-                                map<string, unsigned char>::iterator it = internalAT_frameId_map_.find(io_sample->getSourceNetworkAddress());
+                                /* Started new code for auto-discovery */
+                                ZB_Node* node = new ZB_Node();
+
+                                node->setNetworkAddr(io_sample->getSourceNetworkAddress());
+
+                                // Add network address of node to network node list.
+                                nodeList_.push_back(node);
+
+                                // Send AT command ("AT NI") to newly found node
+                                internalAT_frameID_vector_.push_back(sendATCommand(io_sample->getSourceNetworkAddress(),
+                                              io_sample->getSourceAddress(),"NI"));
+
+
+
+                                //map<string, unsigned char>::iterator it = internalAT_frameId_map_.find(io_sample->getSourceNetworkAddress());
                                 // Check if there's already a request for Node identification for this source network address.
-                                if(it != internalAT_frameId_map_.end()){
+                                /*if(it != internalAT_frameId_map_.end()){
 
                                     cout << "DEBUG: AT NI command already issued for this address." << endl;
 
@@ -532,16 +552,16 @@ void ZB_MonitoringAndControl::job()
                                     }
                                     else
                                         cout << "NOT FOUND!" << endl;
-                                }
+                                }*/
                                 // If no call to AT NI has been issued for this node, send it and add an entry
                                 // to the internal map.
-                                else{
+                                /*else{
                                     cout << "DEBUG: Issuing AT NI command..." << endl;
                                     //internalAT_frameId_map_[io_sample->getSourceNetworkAddress()] = setNodeIdentifier(io_sample->getSourceNetworkAddress());
                                     internalAT_frameId_map_[io_sample->getSourceNetworkAddress()] = sendATCommand(io_sample->getSourceNetworkAddress(),
                                                                                                                   io_sample->getSourceAddress(),
                                                                                                                   "NI");
-                                }
+                                }*/
                             }
                         }
                         else
@@ -591,6 +611,18 @@ void ZB_MonitoringAndControl::job()
 // Process AT command status method
 void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_response)
 {
+    bool processInternally = false;
+
+    // Check if the AT response received is to be processed internally or not.
+    for (unsigned int i = 0; i < internalAT_frameID_vector_.size(); i++){
+
+        if(at_response->getFrameId() == internalAT_frameID_vector_[i]){
+            processInternally = true;
+            internalAT_frameID_vector_.erase(internalAT_frameID_vector_.begin() + i);
+            break;
+        }
+    }
+
     switch(at_response->getCommandStatus())
     {
         // If OK status has been received from an issued AT command, then the parameter value should be shown (if any).
@@ -632,15 +664,23 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
 
                 case API_AT_CommandResponse::ADDR_CRE_NODE_IDENTIFIER:
                 {
-                    Resumed_AT_Response resumedATResponse;
-                    resumedATResponse.commandStatus = API_AT_CommandResponse::CommandStatus(at_response->getCommandStatus());
-                    resumedATResponse.parameterValueType = STRING;
-                    resumedATResponse.s_value = at_response->getParameterValue();
 
-                    commandsResponse_buffer_[at_response->getFrameId()] = resumedATResponse;
+                    if(processInternally)
+                    {
+                        internalAT_frameID_vector_.push_back(discoverNetworkNodes(at_response->getParameterValue()));
+                    }
+                    else
+                    {
+                        Resumed_AT_Response resumedATResponse;
+                        resumedATResponse.commandStatus = API_AT_CommandResponse::CommandStatus(at_response->getCommandStatus());
+                        resumedATResponse.parameterValueType = STRING;
+                        resumedATResponse.s_value = at_response->getParameterValue();
 
-                    cout << "DEBUG: Received response: ADDR_CRE_NODE_IDENTIFIER" << endl
-                    << "Value: " << resumedATResponse.s_value << endl;
+                        commandsResponse_buffer_[at_response->getFrameId()] = resumedATResponse;
+
+                        cout << "DEBUG: Received response: ADDR_CRE_NODE_IDENTIFIER" << endl
+                        << "Value: " << resumedATResponse.s_value << endl;
+                    }
 
                     break;
                 }
@@ -667,15 +707,114 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
 
         case API_AT_CommandResponse::INVALID_COMMAND:
             cout << "INVALID COMMAND" << endl;
+            cout << "AT Command: " << at_response->getATCommand() << endl;
             break;
 
         case API_AT_CommandResponse::INVALID_PARAMETER:
             cout << "INVALID PARAMETER" << endl;
+            cout << "AT Command: " << at_response->getATCommand() << endl;
+            cout << "AT parameter: " << at_response->getParameterValue() << endl;
             break;
 
         case API_AT_CommandResponse::TX_FAILURE:
-            cout << "TX_FAILURE" << endl;
+        {
+            //unsigned int bandwith = 0;
+            API_AT_CommandResponse::ATCommands atCommand = API_AT_CommandResponse::UNKNOWN_COMMAND;
+            cout << "TX FAILURE" << endl;
+            cout << "AT Command: " << at_response->getATCommand() << endl;
+
+
+            /* Depending on the command issued, the parameter value should get different treatment.
+             */
+            atCommand = API_AT_CommandResponse::ATCommands(((unsigned char)at_response->getATCommand()[0]*0x100) + (unsigned  char)at_response->getATCommand()[1]);
+
+            switch(atCommand)
+            {
+                case API_AT_CommandResponse::SERIAL_CRE_INTERFACE_DATA_RATE:
+                {
+                    if(processInternally)
+                    {
+                        // Can't see why I would issue this AT command internally
+                    }
+                    else
+                    {
+                        Resumed_AT_Response resumedATResponse;
+                        resumedATResponse.commandStatus = API_AT_CommandResponse::CommandStatus(at_response->getCommandStatus());
+                        resumedATResponse.parameterValueType = STRING;
+                        resumedATResponse.s_value = at_response->getParameterValue();
+
+                        commandsResponse_buffer_[at_response->getFrameId()] = resumedATResponse;
+                    }
+
+                    break;
+                }
+
+                case API_AT_CommandResponse::EXEC_CRE_NODE_DISCOVERY:
+                {
+                    if(processInternally)
+                    {
+                        // Check if this AT ND command was parameterized.
+                        // If it was, it means that this command was issued to a specific node NI.
+                        if(at_response->getParameterValue().compare("") != 0){
+                            // This command should be qeued.
+                            internalAT_frameID_vector_.push_back(discoverNetworkNodes(at_response->getParameterValue()));
+                        }
+                    }
+                    else
+                    {
+                        updateNodeList(new ZB_Node(at_response->getParameterValue()));
+                    }
+
+                    break;
+                }
+
+                case API_AT_CommandResponse::ADDR_CRE_NODE_IDENTIFIER:
+                {
+
+                    if(processInternally)
+                    {
+                        if (at_response->getFrameType() == API_Frame::AT_REMOTE_RESPONSE)
+                        {
+                            API_AT_RemoteCommandResponse *at_rmt_response = dynamic_cast<API_AT_RemoteCommandResponse*>(at_response);
+                            internalAT_frameID_vector_.push_back(sendATCommand(at_rmt_response->getSourceNetworkAddress(),
+                                                                               at_rmt_response->getSourceAddress(),
+                                                                               "NI"));
+                        }
+                        else if (at_response->getFrameType() == API_Frame::AT_COMMAND_RESPONSE)
+                        {
+                            internalAT_frameID_vector_.push_back(sendATCommand("", "", "NI"));
+                        }
+                    }
+                    else
+                    {
+                        Resumed_AT_Response resumedATResponse;
+                        resumedATResponse.commandStatus = API_AT_CommandResponse::CommandStatus(at_response->getCommandStatus());
+                        resumedATResponse.parameterValueType = STRING;
+                        resumedATResponse.s_value = at_response->getParameterValue();
+
+                        commandsResponse_buffer_[at_response->getFrameId()] = resumedATResponse;
+
+                        cout << "DEBUG: Received response: ADDR_CRE_NODE_IDENTIFIER" << endl
+                        << "Value: " << resumedATResponse.s_value << endl;
+                    }
+
+                    break;
+                }
+
+                default:
+
+                    cout << "Parameter value: ";
+                    for(unsigned int i = 0; i < at_response->getParameterValue().length(); i++){
+
+                        cout << hex << (int)(unsigned char)at_response->getParameterValue()[i];
+                    }
+
+                    break;
+            }
+
+            cout << endl;
             break;
+        } // TX_FAILURE
 
         default:
             cout << "UNKNOWN" << endl;
