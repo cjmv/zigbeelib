@@ -483,6 +483,8 @@ void ZB_MonitoringAndControl::job()
                     }
                     cout << endl;
 
+                    sendQeuedCommands(io_sample->getSourceNetworkAddress());
+
                     if(auto_update_nodes_){
 
                         if(!nodeList_.empty()){
@@ -533,35 +535,6 @@ void ZB_MonitoringAndControl::job()
                                 internalAT_frameID_vector_.push_back(sendATCommand(io_sample->getSourceNetworkAddress(),
                                               io_sample->getSourceAddress(),"NI"));
 
-
-
-                                //map<string, unsigned char>::iterator it = internalAT_frameId_map_.find(io_sample->getSourceNetworkAddress());
-                                // Check if there's already a request for Node identification for this source network address.
-                                /*if(it != internalAT_frameId_map_.end()){
-
-                                    cout << "DEBUG: AT NI command already issued for this address." << endl;
-
-                                    Resumed_AT_Response atResponse;
-
-                                    // Get the resumed AT response regarding the parameterized frameId (it->second)
-                                    cout << "DEBUG: Checking for AT response..." << flush;
-                                    if(retrieveCommandsResponseBuffer(it->second, atResponse)){
-                                        // Issue AT ND (Node Discovery) command for the retrieved NI value from the node.
-                                        cout << "FOUND!" << endl << "DEBUG: Issuing AT ND for " << atResponse.s_value << endl;
-                                        discoverNetworkNodes(atResponse.s_value);
-                                    }
-                                    else
-                                        cout << "NOT FOUND!" << endl;
-                                }*/
-                                // If no call to AT NI has been issued for this node, send it and add an entry
-                                // to the internal map.
-                                /*else{
-                                    cout << "DEBUG: Issuing AT NI command..." << endl;
-                                    //internalAT_frameId_map_[io_sample->getSourceNetworkAddress()] = setNodeIdentifier(io_sample->getSourceNetworkAddress());
-                                    internalAT_frameId_map_[io_sample->getSourceNetworkAddress()] = sendATCommand(io_sample->getSourceNetworkAddress(),
-                                                                                                                  io_sample->getSourceAddress(),
-                                                                                                                  "NI");
-                                }*/
                             }
                         }
                         else
@@ -668,6 +641,19 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
                     if(processInternally)
                     {
                         internalAT_frameID_vector_.push_back(discoverNetworkNodes(at_response->getParameterValue()));
+
+                        API_AT_RemoteCommandResponse* at_rmt_response = dynamic_cast<API_AT_RemoteCommandResponse*>(at_response);
+
+                        lock();
+                        {
+                            for(unsigned int i = 0; i < nodeList_.size(); i++){
+
+                                if (nodeList_[i]->getNetworkAddr().compare(at_rmt_response->getSourceNetworkAddress()) == 0)
+
+                                    nodeList_[i]->setNodeIdent(at_response->getParameterValue());
+                            }
+                        }
+                        unlock();
                     }
                     else
                     {
@@ -762,7 +748,12 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
                     }
                     else
                     {
-                        updateNodeList(new ZB_Node(at_response->getParameterValue()));
+                        Resumed_AT_Response resumedATResponse;
+                        resumedATResponse.commandStatus = API_AT_CommandResponse::CommandStatus(at_response->getCommandStatus());
+                        resumedATResponse.parameterValueType = STRING;
+                        resumedATResponse.s_value = at_response->getParameterValue();
+
+                        commandsResponse_buffer_[at_response->getFrameId()] = resumedATResponse;
                     }
 
                     break;
@@ -857,27 +848,31 @@ void ZB_MonitoringAndControl::updateNodeList(ZB_Node* node)
 {
     bool found = false, updated = false;
 
-    for (unsigned int i = 0; i < nodeList_.size(); i++){
+    lock();
+    {
+        for (unsigned int i = 0; i < nodeList_.size(); i++){
 
-        if (nodeList_[i]->getNetworkAddr() == node->getNetworkAddr()){
+            if (nodeList_[i]->getNetworkAddr() == node->getNetworkAddr()){
 
-            found = true;
-            if(*nodeList_[i] == *node)
-                break;
+                found = true;
+                if(*nodeList_[i] == *node)
+                    break;
 
-            else{
-                nodeList_.erase(nodeList_.begin() + i);
-                nodeList_.push_back(node);
-                updated = true;
-                break;
+                else{
+                    nodeList_.erase(nodeList_.begin() + i);
+                    nodeList_.push_back(node);
+                    updated = true;
+                    break;
+                }
             }
         }
-    }
 
-    if(!found)
-        nodeList_.push_back(node);
-    else if(found && !updated)
-        delete node;
+        if(!found)
+            nodeList_.push_back(node);
+        else if(found && !updated)
+            delete node;
+    }
+    unlock();
 }
 
 // biCount method
@@ -892,6 +887,42 @@ unsigned int ZB_MonitoringAndControl::bitCount(unsigned int number)
 	}
 
 	return count;
+}
+
+// send queued commands method
+unsigned int ZB_MonitoringAndControl::sendQeuedCommands(string networkAddress)
+{
+    unsigned int numberOfMatches = 0;
+    lock();
+    {
+        // Browse the qeued AT Commands vector
+        for (vector<API_AT_Command*>::iterator it = qeuedAT_Commands_vector_.begin(); it != qeuedAT_Commands_vector_.end();){
+
+            // If the frame type is a AT Remote command
+            if ((*it)->getFrameType() == API_Frame::AT_REMOTE_COMMAND){
+
+                API_AT_RemoteCommand *at_rmt_command = dynamic_cast<API_AT_RemoteCommand*>(*it);
+
+                // If the network address matches the one on the AT command message
+                if(networkAddress.compare(at_rmt_command->getDestinationNetworkAddress()) == 0){
+
+                    numberOfMatches++; // Incremente the number of messages found
+                    txrx_->sendMessage(at_rmt_command->getFrame()); // send the qeued AT command
+                    it = qeuedAT_Commands_vector_.erase(it); // Remove the AT command from the vector.
+                }
+                else
+                    it++;
+            }
+            else if ((*it)->getFrameType() == API_Frame::AT_COMMAND){
+                it++;
+            }
+            else
+                it++;
+        }
+    }
+    unlock();
+
+    return numberOfMatches;
 }
 
 // setRemoteAddressing method

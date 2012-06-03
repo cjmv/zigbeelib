@@ -112,7 +112,9 @@ class ZB_MonitoringAndControl: public Thread
          * \return A STL vector holding the current value of node list member variable.
          */
         inline std::vector<ZB_Node*> getNodeList() {
+            lock();
             return nodeList_;
+            unlock();
         }
 
         /** Set method to update the nodeList_ member variable value
@@ -340,6 +342,17 @@ class ZB_MonitoringAndControl: public Thread
          */
         unsigned int bitCount(unsigned int number);
 
+        /** This method purpose is to check the existent of qeued AT commands and send them if the provided
+         *  network address matches any of the destination network addresses of the qeued commands.
+         * \param networkAddress A STL string holding the value of the network address to matched against.
+         */
+        unsigned int sendQeuedCommands(std::string networkAddress);
+
+        /** This method purpose is to set the correct destination addresses and network addresses to the AT remote
+         *  command to be sent.
+         * \param remoteCommand An API_AT_RemoteCommand object to where the address should be set.
+         * \note Needs further description.
+         */
         bool setRemoteAddressing(API_AT_RemoteCommand* remoteCommand, std::string nodeIdent, std::string address = "");
 
         bool run_; //!< A boolean variable indicating if this class thread should continue to run or not.
