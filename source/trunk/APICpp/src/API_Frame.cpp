@@ -20,9 +20,9 @@ API_Frame::API_Frame()
 }
 
 // Copy constructor
-API_Frame::API_Frame(const API_Frame& other)
+/*API_Frame::API_Frame(const API_Frame& other)
 {
-}
+}*/
 
 // Constructor
 API_Frame::API_Frame(unsigned int length, FrameType frameType): length_(length), frameType_(frameType)

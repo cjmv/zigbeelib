@@ -112,9 +112,12 @@ class ZB_MonitoringAndControl: public Thread
          * \return A STL vector holding the current value of node list member variable.
          */
         inline std::vector<ZB_Node*> getNodeList() {
+
             lock();
-            return nodeList_;
+                std::vector<ZB_Node*> nodeList = nodeList_;
             unlock();
+
+            return nodeList;
         }
 
         /** Set method to update the nodeList_ member variable value

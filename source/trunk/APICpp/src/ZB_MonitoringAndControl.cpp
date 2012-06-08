@@ -346,6 +346,7 @@ unsigned char ZB_MonitoringAndControl::sendATCommand(string networkAddr,
         return incrementFrameID() - 0x1;
     }
     else{
+
         API_AT_RemoteCommand *at_remoteCommand;
         at_remoteCommand = new API_AT_RemoteCommand(frameId_, atCommand, parameter);
         setRemoteAddressing(at_remoteCommand, networkAddr, addr);
@@ -418,11 +419,11 @@ void ZB_MonitoringAndControl::job()
         txrx_->accessMessagePool(message);
 
         if(message.compare("") != 0){
-            /*cout << "DEBUG: Message received: ";
+            cout << "DEBUG: Message received: ";
             for(unsigned int x = 0; x < message.length(); x++){
                 cout << hex << (int)(unsigned char)message[x] << " ";
             }
-            cout << endl;*/
+            cout << endl;
             switch((unsigned char)message[3])
             {
 
@@ -526,10 +527,14 @@ void ZB_MonitoringAndControl::job()
                                 /* Started new code for auto-discovery */
                                 ZB_Node* node = new ZB_Node();
 
+                                node->setSerialNumberHigh(io_sample->getSourceAddress().substr(0, 4));
+                                node->setSerialNumberLow(io_sample->getSourceAddress().substr(4, 4));
                                 node->setNetworkAddr(io_sample->getSourceNetworkAddress());
 
                                 // Add network address of node to network node list.
-                                nodeList_.push_back(node);
+                                lock();
+                                    nodeList_.push_back(node);
+                                unlock();
 
                                 // Send AT command ("AT NI") to newly found node
                                 internalAT_frameID_vector_.push_back(sendATCommand(io_sample->getSourceNetworkAddress(),
@@ -769,7 +774,7 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
                             API_AT_RemoteCommandResponse *at_rmt_response = dynamic_cast<API_AT_RemoteCommandResponse*>(at_response);
                             internalAT_frameID_vector_.push_back(sendATCommand(at_rmt_response->getSourceNetworkAddress(),
                                                                                at_rmt_response->getSourceAddress(),
-                                                                               "NI"));
+                                                                               "NI", "", true));
                         }
                         else if (at_response->getFrameType() == API_Frame::AT_COMMAND_RESPONSE)
                         {
@@ -938,7 +943,7 @@ bool ZB_MonitoringAndControl::setRemoteAddressing(API_AT_RemoteCommand* remoteCo
 
             if(nodeList_[i]->getNodeIdent().compare(nodeIdent) == 0 ||
                nodeList_[i]->getNetworkAddr().compare(nodeIdent) == 0 ||
-               string(nodeList_[i]->getSerialNumberHigh() + nodeList_[i]->getSerialNumberLow()).compare(nodeIdent) == 0){
+               string(nodeList_[i]->getSerialNumberHigh() + nodeList_[i]->getSerialNumberLow()).compare(address) == 0){
 
                  remoteCommand->setDestinationAddress(string(nodeList_[i]->getSerialNumberHigh() + nodeList_[i]->getSerialNumberLow()));
                  remoteCommand->setDestinationNetworkAddress(nodeList_[i]->getNetworkAddr());

@@ -52,7 +52,7 @@ class API_Frame
         /** Copy constructor
          *  \param other Object to copy from
          */
-        API_Frame(const API_Frame& other);
+        //API_Frame(const API_Frame& other);
 
         /** Constructor to initialise an API Frame (through its children), holding common items to all frame types.
          * \param length An unsigned integer holding the length for this API Frame.

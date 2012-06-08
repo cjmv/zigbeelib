@@ -58,7 +58,7 @@ protected:
 	void unlock();
 
 	/** This method shall try to lock the pthread mutex.
-	 * \return A boolean value. "true" is lock was successful and "false" if otherwise.
+	 * \return A boolean value. "true" if lock was successful and "false" if otherwise.
 	 * \sa Thread()
 	 * \sa mutex_
 	 */

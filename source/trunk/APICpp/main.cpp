@@ -334,16 +334,17 @@ void useMC()
 
         if(string(option).compare("nodes") == 0){
 
+            vector<ZB_Node*> nodeList = mc->getNodeList();
             cout << "Nodes:" << endl;
-            for(unsigned int i = 0; i < mc->getNodeList().size(); i++){
+            for(unsigned int i = 0; i < nodeList.size(); i++){
 
-                cout << "\t(size: " << mc->getNodeList()[i]->getNodeIdent().size() << "): " <<  mc->getNodeList()[i]->getNodeIdent() << endl;
+                cout << "\t(size: " << nodeList[i]->getNodeIdent().size() << "): " <<  nodeList[i]->getNodeIdent() << endl;
 
-                cout << "Network Address (" << mc->getNodeList()[i]->getNetworkAddr().size() << " bytes):" <<  hex;
+                cout << "Network Address (" << nodeList[i]->getNetworkAddr().size() << " bytes):" <<  hex;
 
-                for(unsigned int x = 0; x < mc->getNodeList()[i]->getNetworkAddr().size(); x++){
+                for(unsigned int x = 0; x < nodeList[i]->getNetworkAddr().size(); x++){
 
-                    cout << (int)(unsigned char)mc->getNodeList()[i]->getNetworkAddr()[x];
+                    cout << (int)(unsigned char)nodeList[i]->getNetworkAddr()[x];
                 }
                 cout << endl;
             }
@@ -447,7 +448,7 @@ void useMC()
 
         else if (string(option).find("command") != string::npos){
 
-            if(string(option).find("NI") != string::npos){
+            if(string(option).find("setNI") != string::npos){
 
                 mc->setNodeIdentifier(mc->int2Hex((unsigned int)0xfcd7), "ROUTER");
             }
@@ -459,6 +460,15 @@ void useMC()
 
                 mc->setIOSampleRate("END POINT", 3000);
             }
+            else if(string(option).find("getNI") != string::npos){
+
+                mc->sendATCommand("END POINT", "", "NI");
+            }
+        }
+
+        else if (string(option).find("testqeue") != string::npos){
+
+            mc->sendATCommand("END POINT", "", "NI", "", true);
         }
 
         else if (string(option).find("discover") != string::npos)
@@ -475,6 +485,8 @@ void useMC()
             delete mc;
             break;
         }
+        else
+            cout << "Unknown command!" << endl;
     }
 }
 
