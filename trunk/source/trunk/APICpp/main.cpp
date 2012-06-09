@@ -471,9 +471,16 @@ void useMC()
             mc->sendATCommand("END POINT", "", "NI", "", true);
         }
 
-        else if (string(option).find("discover") != string::npos)
+        else if (string(option).find("discover") != string::npos){
 
-            mc->discoverNetworkNodes();
+            if(string(option).find("ENDPOINT") != string::npos)
+
+                mc->discoverNetworkNodes("END POINT");
+
+            else
+                mc->discoverNetworkNodes();
+        }
+
 
         else if (string(option).find("write") != string::npos)
 

@@ -19,6 +19,7 @@
 #define ZB_MONITORINGANDCONTROL_H
 
 #include <map>
+#include <utility>
 
 //#include "Thread.h"
 #include "ZB_Frame_TXRX.h"
@@ -272,6 +273,8 @@ class ZB_MonitoringAndControl: public Thread
          * \param option An RemoteCommandOption enumerated type holding the value of the AT remote command option
          *               to be considered. By default this value is "APPLY_CH". This parameter is ignored if the
          *               AT command is to be sent locally.
+         * \param generatedFrame A pointer to a STL string holding the generated frame string by calling this method. This
+         *                       paramater has the default value of 0. So is always possible to ignore it when calling the method.
          * \return An unsigned char holding the value of the frame ID sent with this command.
          */
         unsigned char sendATCommand(std::string networkAddr,
@@ -279,8 +282,8 @@ class ZB_MonitoringAndControl: public Thread
                                     std::string atCommand,
                                     std::string parameter = "",
                                     bool sleeping = false,
-                                    API_AT_RemoteCommand::RemoteCommandOption option = API_AT_RemoteCommand::APPLY_CH
-                                    );
+                                    API_AT_RemoteCommand::RemoteCommandOption option = API_AT_RemoteCommand::APPLY_CH,
+                                    std::string* generatedFrame = 0);
 
         /** This method purpose is to write (WR) changes set in a given node to non-volatile memory, so that the configuration
          * is able to persist after a reset.
@@ -382,7 +385,7 @@ class ZB_MonitoringAndControl: public Thread
         std::map< std::string, API_IO_Sample*> nodeSample_map_; //!< A STL map with the node identification as the key and the corresponding sample represented by an API_IO_Sample object.
 
 
-        std::vector<unsigned char> internalAT_frameID_vector_; /**< A STL vector holding the frameIDs of the AT command issued, that should
+        std::vector< std::pair<unsigned char, std::string> > internalAT_frameID_vector_; /**< A STL vector holding a pair of frameID from the AT command issued and the frame string, that should
                                                                 * be dealt internally.
                                                                 */
 

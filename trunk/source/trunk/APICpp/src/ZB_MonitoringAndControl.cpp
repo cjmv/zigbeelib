@@ -335,7 +335,8 @@ unsigned char ZB_MonitoringAndControl::sendATCommand(string networkAddr,
                                                      string atCommand,
                                                      string parameter,
                                                      bool slepping,
-                                                     API_AT_RemoteCommand::RemoteCommandOption option)
+                                                     API_AT_RemoteCommand::RemoteCommandOption option,
+                                                     string* generatedFrame)
 {
     if(networkAddr.compare("") == 0 && addr.compare("") == 0){
 
@@ -354,7 +355,15 @@ unsigned char ZB_MonitoringAndControl::sendATCommand(string networkAddr,
 
         if(!slepping)
         {
-            txrx_->sendMessage(at_remoteCommand->getFrame());
+            if (generatedFrame  != 0){
+
+                *generatedFrame = at_remoteCommand->getFrame();
+                //txrx_->sendMessage(at_remoteCommand->getFrame());
+                txrx_->sendMessage(*generatedFrame);
+            }
+            else
+                txrx_->sendMessage(at_remoteCommand->getFrame());
+
             delete at_remoteCommand;
         }
         else
@@ -525,6 +534,8 @@ void ZB_MonitoringAndControl::job()
                                 cout << "DEBUG: New node found!..." << endl;
 
                                 /* Started new code for auto-discovery */
+                                unsigned char frameId;
+                                string* generatedFrame = new string("");
                                 ZB_Node* node = new ZB_Node();
 
                                 node->setSerialNumberHigh(io_sample->getSourceAddress().substr(0, 4));
@@ -537,9 +548,15 @@ void ZB_MonitoringAndControl::job()
                                 unlock();
 
                                 // Send AT command ("AT NI") to newly found node
-                                internalAT_frameID_vector_.push_back(sendATCommand(io_sample->getSourceNetworkAddress(),
-                                              io_sample->getSourceAddress(),"NI"));
+                                frameId = sendATCommand(io_sample->getSourceNetworkAddress(),
+                                                        io_sample->getSourceAddress(),
+                                                        "NI", "", false, API_AT_RemoteCommand::APPLY_CH, generatedFrame);
 
+                                internalAT_frameID_vector_.push_back(make_pair(frameId, *generatedFrame));
+                                /*internalAT_frameID_vector_.push_back(sendATCommand(io_sample->getSourceNetworkAddress(),
+                                              io_sample->getSourceAddress(),"NI"));*/
+
+                                delete generatedFrame;
                             }
                         }
                         else
@@ -590,12 +607,14 @@ void ZB_MonitoringAndControl::job()
 void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_response)
 {
     bool processInternally = false;
+    string *generatedString;
 
     // Check if the AT response received is to be processed internally or not.
     for (unsigned int i = 0; i < internalAT_frameID_vector_.size(); i++){
 
-        if(at_response->getFrameId() == internalAT_frameID_vector_[i]){
+        if(at_response->getFrameId() == internalAT_frameID_vector_[i].first){
             processInternally = true;
+            generatedString = new string(internalAT_frameID_vector_[i].second);
             internalAT_frameID_vector_.erase(internalAT_frameID_vector_.begin() + i);
             break;
         }
@@ -645,7 +664,7 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
 
                     if(processInternally)
                     {
-                        internalAT_frameID_vector_.push_back(discoverNetworkNodes(at_response->getParameterValue()));
+                        internalAT_frameID_vector_.push_back(make_pair(discoverNetworkNodes(at_response->getParameterValue()), ""));
 
                         API_AT_RemoteCommandResponse* at_rmt_response = dynamic_cast<API_AT_RemoteCommandResponse*>(at_response);
 
@@ -748,7 +767,7 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
                         // If it was, it means that this command was issued to a specific node NI.
                         if(at_response->getParameterValue().compare("") != 0){
                             // This command should be qeued.
-                            internalAT_frameID_vector_.push_back(discoverNetworkNodes(at_response->getParameterValue()));
+                            internalAT_frameID_vector_.push_back(make_pair(discoverNetworkNodes(at_response->getParameterValue()), ""));
                         }
                     }
                     else
@@ -771,14 +790,17 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
                     {
                         if (at_response->getFrameType() == API_Frame::AT_REMOTE_RESPONSE)
                         {
-                            API_AT_RemoteCommandResponse *at_rmt_response = dynamic_cast<API_AT_RemoteCommandResponse*>(at_response);
+                            /*API_AT_RemoteCommandResponse *at_rmt_response = dynamic_cast<API_AT_RemoteCommandResponse*>(at_response);
                             internalAT_frameID_vector_.push_back(sendATCommand(at_rmt_response->getSourceNetworkAddress(),
                                                                                at_rmt_response->getSourceAddress(),
-                                                                               "NI", "", true));
+                                                                               "NI", "", true));*/
+                            txrx_->sendMessage(*generatedString);
+                            internalAT_frameID_vector_.push_back(make_pair(at_response->getFrameId(), *generatedString));
+                            delete generatedString;
                         }
                         else if (at_response->getFrameType() == API_Frame::AT_COMMAND_RESPONSE)
                         {
-                            internalAT_frameID_vector_.push_back(sendATCommand("", "", "NI"));
+                            internalAT_frameID_vector_.push_back(make_pair(sendATCommand("", "", "NI"), ""));
                         }
                     }
                     else
