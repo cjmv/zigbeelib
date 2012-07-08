@@ -20,6 +20,21 @@
 
 using namespace std;
 
+
+string trimmer(string s, char c = ' ')
+{
+    string tstring = "";
+
+    for (unsigned int i = 0; i < s.size(); i++){
+
+        if(s[i] != c)
+            tstring += s[i];
+    }
+
+    return tstring;
+}
+
+
 bool unitTesting()
 {
 
@@ -443,6 +458,33 @@ void useMC()
                         cout << "ERROR: No type for parameter value!" << endl;
                         break;
                 }
+            }
+        }
+
+        else if (string(option).substr(0, 2).compare("AT") == 0){
+
+            string node = "", qeued = "", parameter = "";
+
+            cout << "Where to: ";
+            getline(cin, node);
+            cout << "Queue command?(yes/no) [no]: ";
+            getline(cin, qeued);
+
+            if(string(option).substr(2, 1).compare("D") == 0){
+
+                parameter = trimmer(string(option).substr(4));
+
+                if(qeued.compare("yes") == 0)
+                    mc->sendATCommand(node, "", string(option).substr(2, 2), mc->int2Hex((unsigned int)atoi(parameter.c_str())), true);
+                else
+                    mc->sendATCommand(node, "", string(option).substr(2, 2), mc->int2Hex((unsigned int)atoi(parameter.c_str())));
+            }
+            else {
+
+                if (qeued.compare("yes") == 0)
+                    mc->sendATCommand(node, "", string(option).substr(2, 2), "");
+                else
+                    mc->sendATCommand(node, "", string(option).substr(2, 2), "", true);
             }
         }
 
