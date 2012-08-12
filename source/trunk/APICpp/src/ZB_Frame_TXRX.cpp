@@ -111,11 +111,21 @@ void ZB_Frame_TXRX::job()
 
 	if (serial_fd_ < 0){
 
-		cout << "Error while opening device..." << endl;
-		exit(1);
+        cout << "Error while opening device \"" << device_ << "\"..." << endl
+            << "errno = " << errno << "\t Description: " << strerror(errno) << endl;
+
+        exit(1);
 	}
 
 	tcsetattr(serial_fd_,TCSANOW,&tio);
+
+	if (serial_fd_ < 0){
+
+        cout << "Error while setting device attributes... " << endl
+            << "errno = " << errno << "\t Description: " << strerror(errno) << endl;
+
+        exit(1);
+    }
 
 	//cout << "Wating for response..." << endl;
 	nBytes = 0;
