@@ -76,7 +76,7 @@ double voltage_divider(vector<int>& imp_elements, int grounded_element, double V
 
 double AD_output_to_mV (int AD_value)
 {
-	return ((double)AD_value * (double)1200.0) / (double)1024.0;
+	return ((double)AD_value * (double)1200.0) / (double)1023.0;
 }
 
 double get_lm335A_Sensor_KelvinValue(double AD_mV)
@@ -102,6 +102,38 @@ void getTemperatureCelsius(int hexAD)
 	cout << "Temperature (Kelvin): " << kelvin_deg << " Kelvin" << endl;
 	celcius_deg = kelvin2Celsius(kelvin_deg);
 	cout << "Temperature (Celcius): " << celcius_deg << "ºC" << endl;
+
+}
+
+double getRH (double proportional_ADVout)
+{
+    // Vsupply = 5.08
+
+    return proportional_ADVout / ((double)5.08 * (double)0.0062) - (double)0.16 / (double)0.0062;
+}
+
+double getTrueRH(double RH, double tempCelcius)
+{
+    return RH / ((double)1.0546 - ((double)0.00216 * tempCelcius));
+}
+
+void getHumidity(int hexAD, double tempCelcius = 25.0)
+{
+    // Vout = Vsupply (0.1915 to 0.8130)
+    //                   0%  to   100%
+    // Since Vsupply is 5.08 V, then...
+    //double V0 = 0.97282;
+    //double V100 = 4.13004;
+
+    double ADVout = AD_output_to_mV(hexAD) / (double)1000.0;
+    double proportional_ADVout = ((double)ADVout * (double)4.13004) / (double)1.2;
+    double RH = getRH(proportional_ADVout);
+
+    cout << "AD in HEX: " << hex << hexAD << dec << endl;
+    cout << "AD(Vout): " << ADVout << "V" << endl;
+    cout << "Proportional AD(Vout): " << proportional_ADVout << "V" << endl;
+    cout << "RH: " << RH << "%" << endl;
+    cout << "True RH: " << getTrueRH(RH, tempCelcius) << "%" << endl;
 
 }
 
@@ -386,14 +418,33 @@ void useMC()
 
             string sample = "";
             API_IO_Sample io_sample;
+            unsigned short pin = 0;
 
             if (mc->accessNodeIOSample("ROUTER", &io_sample)){
 
                 cout << "DEBUG: IO Frame length: " << io_sample.getLength() << endl;
-                sample = io_sample.getAnalogSamples().begin()->second;
+                cout << "Number of digital pins reading high: "  << io_sample.getDigitalSamples().size() << endl;
+                cout << "Number of analog pins with samples: " << io_sample.getAnalogSamples().size() << endl;
 
-                getTemperatureCelsius((unsigned char)sample[0]*0x100 + (unsigned char)sample[1]);
+                // Going through analog samples
+                for (unsigned int i = 0; i < io_sample.getAnalogSamples().size(); i++){
 
+                    pin = io_sample.getAnalogSamples()[i].first;
+                    cout << "Pin: " << pin << endl;
+
+                    sample = io_sample.getAnalogSamples()[i].second;
+
+                    if(pin == 0)
+                    {
+                        getTemperatureCelsius((unsigned char)sample[0]*0x100 + (unsigned char)sample[1]);
+                    }
+
+                    else if (pin == 1){
+
+                        getHumidity((unsigned char)sample[0]*0x100 + (unsigned char)sample[1], 21.7474);
+                    }
+
+                }
             }
             else
                 cout << "No Sample found for ROUTER node." << endl;
