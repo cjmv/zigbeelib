@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <errno.h>
+#include <semaphore.h>
 #include <string.h>
 
 #include <iostream>
@@ -171,6 +172,7 @@ class ZB_Frame_TXRX: public Thread
         API_MODE api_mode_; //!< An enum value indicating if the API MODE being used is with escaped control characters or without. The default value is '1' (without escaped characters).
         std::string device_; //!< A string holding the value / path of the device associated to the connected XBee radio.
         std::vector<std::string> messagePool_; //!< A vector of strings holding the pool of messages received from the connected XBee radio that haven't been processed yet.
+        sem_t available_messages_;
 
 };
 
