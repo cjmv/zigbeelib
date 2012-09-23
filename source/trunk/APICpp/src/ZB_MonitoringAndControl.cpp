@@ -599,7 +599,7 @@ void ZB_MonitoringAndControl::job()
             message = "";
         }
 
-        sleep (1);
+        //sleep (1);
     }
 }
 

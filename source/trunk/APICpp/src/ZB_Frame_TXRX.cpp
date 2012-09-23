@@ -19,6 +19,7 @@ ZB_Frame_TXRX::ZB_Frame_TXRX(): Thread()
     api_mode_ = NON_ESCAPED;
     device_ = "";
     run_ = false;
+    sem_init(&available_messages_, 0, 0);
 }
 
 // Constructor
@@ -26,12 +27,14 @@ ZB_Frame_TXRX::ZB_Frame_TXRX(string device): Thread(), device_(device)
 {
     api_mode_ = NON_ESCAPED;
     run_ = false;
+    sem_init(&available_messages_, 0, 0);
 }
 
 // Constructor
 ZB_Frame_TXRX::ZB_Frame_TXRX(API_MODE api_mode, string device): Thread(), api_mode_(api_mode), device_(device)
 {
     run_ = false;
+    sem_init(&available_messages_, 0, 0);
 }
 
 // Copy constructor
@@ -46,6 +49,7 @@ ZB_Frame_TXRX::~ZB_Frame_TXRX()
     //dtor
     stop(); // set run_ flag to false, this will make the reading cycle to break;
     close(serial_fd_); // close serial file descriptor.
+    sem_destroy(&available_messages_); // destroying semaphore.
 }
 
 ZB_Frame_TXRX& ZB_Frame_TXRX::operator=(const ZB_Frame_TXRX& rhs)
@@ -74,20 +78,36 @@ void ZB_Frame_TXRX::stop()
 // accessMessagePool method.
 void ZB_Frame_TXRX::accessMessagePool(string& message)
 {
-    lock(); // acquire lock
-    {
+
+    /*timespec timeout;
+    tm time_tm;
+    time_t seconds;
+    seconds.tm_sec = 1;
+    timeout.tv_sec = seconds;*/
+    //lock(); // acquire lock
+    //{
         if (message.compare("") == 0){ // check if the parameter message value is empty.
+
+            cout << "waiting..." << endl;
+            sem_wait(&available_messages_);
+            lock();
             // Since message is empty, than this method call has the purpose to acquire a message from the message pool.
             if(!messagePool_.empty()){
 
                 message = messagePool_.front();
                 messagePool_.erase(messagePool_.begin());
             }
+            unlock();
         }
-        else
+        else{
+            lock();
             messagePool_.push_back(message); // message was not empty, thus this call has the purpose to add one more message to the pool.
-    }
-    unlock();
+            unlock();
+            cout << "New message available" << endl;
+            sem_post(&available_messages_);
+        }
+    //}
+    //unlock();
 }
 
 // Thread method
