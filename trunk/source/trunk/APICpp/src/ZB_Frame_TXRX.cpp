@@ -79,17 +79,17 @@ void ZB_Frame_TXRX::stop()
 void ZB_Frame_TXRX::accessMessagePool(string& message)
 {
 
-    /*timespec timeout;
-    tm time_tm;
-    time_t seconds;
-    seconds.tm_sec = 1;
-    timeout.tv_sec = seconds;*/
+    timespec timeout;
+
+    clock_gettime(CLOCK_REALTIME, &timeout);
+
+    timeout.tv_sec += 2;
     //lock(); // acquire lock
     //{
         if (message.compare("") == 0){ // check if the parameter message value is empty.
 
-            cout << "waiting..." << endl;
-            sem_wait(&available_messages_);
+            //cout << "waiting..." << endl;
+            sem_timedwait(&available_messages_, &timeout);
             lock();
             // Since message is empty, than this method call has the purpose to acquire a message from the message pool.
             if(!messagePool_.empty()){

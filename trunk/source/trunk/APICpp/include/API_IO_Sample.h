@@ -158,9 +158,6 @@ class API_IO_Sample : public API_Receive_Packet
     protected:
     private:
 
-        static unsigned int digitalPinsMask_; //!< A static unsigned integer holding the digital pins Mask. Unless the XBee physically changes, this value will never change.
-        static unsigned short analogPinsMask_; //!< A static unsigned short holding the analog pins mask. Unless the XBee physically changes, this value will never change.
-
         unsigned short numberOfSamples_; //!< An unsigned integer holding the number of samples for this Frame. for ZBv2 it will always be 1.
         unsigned int digitalChannelMask_; //!< An umsigned integer holding the digital channel mask.
         unsigned short analogChannelMask_; //!< An unsigned short holding the analog channel mask.

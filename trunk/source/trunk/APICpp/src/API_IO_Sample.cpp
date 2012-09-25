@@ -12,9 +12,6 @@
 
 using namespace std;
 
-unsigned int API_IO_Sample::digitalPinsMask_ = 7423;
-unsigned short API_IO_Sample::analogPinsMask_ = 15;
-
 // Default constructor
 API_IO_Sample::API_IO_Sample(): API_Receive_Packet()
 {
@@ -64,6 +61,7 @@ API_IO_Sample::~API_IO_Sample()
 bool API_IO_Sample::parseFrame(string frame)
 {
     // Implementation here
+    unsigned int digitalSamples = 0;
     unsigned int masked = 0;
     unsigned char MSB = (unsigned char)frame[1], LSB = (unsigned char)frame[2];
 
@@ -82,10 +80,15 @@ bool API_IO_Sample::parseFrame(string frame)
     digitalChannelMask_ = (unsigned char)frame[16] + (unsigned char)frame[17];
     analogChannelMask_ = (unsigned char)frame[18];
 
-    // By doing a bitwise AND between these two mask, we get the actual pins that are set high.
+    // If the sample set includes any digital I/O lines (digital channel mask > 0)
+    // these two bytes contain samples for all enabled digital I/O lines.
+    if((unsigned int)digitalChannelMask_ > 0)
+        digitalSamples = (unsigned char)frame[19] + (unsigned char)frame[20];
+
+    // By doing a bitwise AND between the channel mask and the digital Samples, we get the actual pins that are set high.
     // In this particular case the AND works much like a intersection between two groups, i.e,
     // only the bits position that are both set to 1 are high.
-    masked = digitalChannelMask_ & digitalPinsMask_;
+    masked = digitalChannelMask_ & digitalSamples;
     // If the bitwise AND result in a value larger than 0, than it means that at least one of the pins
     // configured to received digital samples is reading high.
     if (masked > 0){
@@ -105,7 +108,7 @@ bool API_IO_Sample::parseFrame(string frame)
     }
 
     // Doing the same thing for the analogMasks.
-    masked = analogChannelMask_ & analogPinsMask_;
+    masked = analogChannelMask_;
     // If the bitwise AND result in a value larger than 0, than it means that at least one of the pins
     // configured to received analog samples is getting them.
     if (masked > 0){
