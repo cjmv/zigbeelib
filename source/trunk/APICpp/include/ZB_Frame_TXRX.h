@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <semaphore.h>
 #include <string.h>
+#include <time.h>
 
 #include <iostream>
 #include <fstream>
