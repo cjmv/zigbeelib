@@ -23,7 +23,7 @@ API_IO_Sample::API_IO_Sample(): API_Receive_Packet()
 // Copy constructor
 API_IO_Sample::API_IO_Sample(const API_IO_Sample& other)
 {
-    //copy ctor
+    *this = other;
 }
 
 // Specific constructor

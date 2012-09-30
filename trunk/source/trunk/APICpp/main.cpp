@@ -368,7 +368,7 @@ void useMC()
     char option[256];
     string message = "";
 
-    ZB_MonitoringAndControl *mc = new ZB_MonitoringAndControl("/dev/ttyUSB0");
+    ZB_MonitoringAndControl *mc = ZB_MonitoringAndControl::getInstance("/dev/ttyUSB0", 10);
 
     mc->startMonitoring();
     sleep(2);
@@ -397,24 +397,52 @@ void useMC()
             }
         }
 
-        else if(string(option).compare("sample ENDPOINT") == 0){
+        else if(string(option).compare("sample") == 0){
 
             string sample = "";
-            API_IO_Sample io_sample;
+            API_IO_Sample *io_sample = new API_IO_Sample();
+            unsigned short pin = 0;
 
-            if (mc->accessNodeIOSample("END POINT", &io_sample)){
+            if (mc->retrieveIOSample(io_sample)){
 
-                cout << "DEBUG: IO Frame length: " << io_sample.getLength() << endl;
-                sample = io_sample.getAnalogSamples().begin()->second;
+                cout << "DEBUG: IO Frame length: " << io_sample->getLength() << endl;
 
-                getTemperatureCelsius((unsigned char)sample[0]*0x100 + (unsigned char)sample[1]);
+                vector<ZB_Node*> nodeList = mc->getNodeList();
 
+                for(unsigned int i = 0; i < nodeList.size(); i++){
+
+                    if(io_sample->getSourceNetworkAddress().compare(nodeList[i]->getNetworkAddr()) == 0){
+
+                        cout << "Retrieved sample for " << nodeList[i]->getNodeIdent() << endl;
+                        cout << "Number of digital pins reading high: "  << io_sample->getDigitalSamples().size() << endl;
+                        cout << "Number of analog pins with samples: " << io_sample->getAnalogSamples().size() << endl;
+
+                        // Going through analog samples
+                        for (unsigned int i = 0; i < io_sample->getAnalogSamples().size(); i++){
+
+                            pin = io_sample->getAnalogSamples()[i].first;
+                            cout << "Pin: " << pin << endl;
+
+                            sample = io_sample->getAnalogSamples()[i].second;
+
+                            if(pin == 0){
+                                getTemperatureCelsius((unsigned char)sample[0]*0x100 + (unsigned char)sample[1]);
+                            }
+
+                            else if (pin == 1){
+                                getHumidity((unsigned char)sample[0]*0x100 + (unsigned char)sample[1], 21.7474);
+                            }
+                        }
+                    }
+                }
             }
             else
-                cout << "No Sample found for END POINT node." << endl;
+                cout << "No Sample found!" << endl;
+
+            delete io_sample;
         }
 
-        else if(string(option).compare("sample ROUTER") == 0){
+        /*else if(string(option).compare("sample ROUTER") == 0){
 
             string sample = "";
             API_IO_Sample io_sample;
@@ -448,7 +476,7 @@ void useMC()
             }
             else
                 cout << "No Sample found for ROUTER node." << endl;
-        }
+        }*/
 
         else if(string(option).compare("response") == 0){
 
