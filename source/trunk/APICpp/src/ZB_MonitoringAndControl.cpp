@@ -13,8 +13,29 @@
 
 using namespace std;
 
+ZB_MonitoringAndControl* ZB_MonitoringAndControl::instance_ = 0;
+
+// getInstance method
+ZB_MonitoringAndControl* ZB_MonitoringAndControl::getInstance(string device, unsigned long max_sample_queue_size)
+{
+    if (instance_ == 0)
+        instance_ = new ZB_MonitoringAndControl(device, max_sample_queue_size);
+
+    return instance_;
+}
+
+// getInstance method
+ZB_MonitoringAndControl* ZB_MonitoringAndControl::getInstance(ZB_Frame_TXRX::API_MODE api_mode, string device, unsigned long max_sample_queue_size)
+{
+    if (instance_ == 0)
+        instance_ = new ZB_MonitoringAndControl(api_mode, device, max_sample_queue_size);
+
+    return instance_;
+}
+
 // Default constructor
-ZB_MonitoringAndControl::ZB_MonitoringAndControl(string device): Thread()
+ZB_MonitoringAndControl::ZB_MonitoringAndControl(string device, unsigned long max_sample_queue_size):
+Thread(), max_sample_queue_size_(max_sample_queue_size)
 {
     //ctor
     if(device.compare("") != 0){
@@ -22,6 +43,7 @@ ZB_MonitoringAndControl::ZB_MonitoringAndControl(string device): Thread()
         frameId_ = 1;
         run_ = false;
         auto_update_nodes_ = true;
+        sem_init(&available_samples_, 0, 0);
     }
         //return this;
     /*else
@@ -29,7 +51,8 @@ ZB_MonitoringAndControl::ZB_MonitoringAndControl(string device): Thread()
 }
 
 // Constructor
-ZB_MonitoringAndControl::ZB_MonitoringAndControl(ZB_Frame_TXRX::API_MODE api_mode, string device): Thread()
+ZB_MonitoringAndControl::ZB_MonitoringAndControl(ZB_Frame_TXRX::API_MODE api_mode, string device, unsigned long max_sample_queue_size):
+Thread(), max_sample_queue_size_(max_sample_queue_size)
 {
     //ctor
     if(device.compare("") != 0){
@@ -50,10 +73,10 @@ ZB_MonitoringAndControl::~ZB_MonitoringAndControl()
     delete txrx_;
 }
 
-ZB_MonitoringAndControl::ZB_MonitoringAndControl(const ZB_MonitoringAndControl& other)
+/*ZB_MonitoringAndControl::ZB_MonitoringAndControl(const ZB_MonitoringAndControl& other)
 {
     //copy ctor
-}
+}*/
 
 ZB_MonitoringAndControl& ZB_MonitoringAndControl::operator=(const ZB_MonitoringAndControl& rhs)
 {
@@ -82,34 +105,24 @@ bool ZB_MonitoringAndControl::retrieveCommandsResponseBuffer(unsigned char frame
     return found;
 }
 
-// accessNodeIOSample method
-bool ZB_MonitoringAndControl::accessNodeIOSample(string node, API_IO_Sample* io_sample)
+// retrieveIOSample method
+bool ZB_MonitoringAndControl::retrieveIOSample(API_IO_Sample* io_sample)
 {
-    bool found = false;
 
+    bool found = false;
+    timespec timeout;
+
+    clock_gettime(CLOCK_REALTIME, &timeout);
+
+    timeout.tv_sec += 2;
+
+    sem_timedwait(&available_samples_, &timeout);
     lock();
     {
-        map< std::string, API_IO_Sample*>::iterator it = nodeSample_map_.find(node);
-
-        if(it != nodeSample_map_.end()){
-
-            *io_sample = *it->second;
+        if(!sample_queue_.empty()){
+            *io_sample = *sample_queue_.front();
+            sample_queue_.pop();
             found = true;
-        }
-
-        if(!found){
-
-            for(it = nodeSample_map_.begin(); it != nodeSample_map_.end(); it++){
-
-                cout << "Node: " << it->first << endl;
-                if (it->second->getSourceNetworkAddress().compare(node) == 0 ||
-                    it->second->getSourceAddress().compare(node) == 0){
-
-                    io_sample = it->second;
-                    found = true;
-                    break;
-                }
-            }
         }
     }
     unlock();
@@ -514,7 +527,18 @@ void ZB_MonitoringAndControl::job()
                                 if(nodeList_[i]->getNetworkAddr().compare(io_sample->getSourceNetworkAddress()) == 0){
 
                                     newNodeFound = false;
-                                    nodeSample_map_[nodeList_[i]->getNodeIdent()] = io_sample;
+                                    lock();
+                                    cout << "Number of samples queued: " << dec << sample_queue_.size() << endl;
+                                    if(sample_queue_.size() >= max_sample_queue_size_){
+
+                                        API_IO_Sample *to_exclude = sample_queue_.front();
+                                        sample_queue_.pop();
+                                        delete to_exclude;
+                                    }
+                                    sample_queue_.push(io_sample);
+                                    unlock();
+                                    sem_post(&available_samples_);
+                                    //nodeSample_map_[nodeList_[i]->getNodeIdent()] = io_sample;
                                     cout << "DEBUG: IO Frame length: " << io_sample->getLength() << endl;
                                     //cout << "From map:" << endl << "\t";
                                     /*map<string, API_IO_Sample*>::iterator it = nodeSample_map_.find("END POINT");
@@ -524,6 +548,7 @@ void ZB_MonitoringAndControl::job()
                                     }
                                     break;*/
                                     cout << "Source: " << nodeList_[i]->getNodeIdent() << endl;
+                                    break;
                                 }
                             }
 

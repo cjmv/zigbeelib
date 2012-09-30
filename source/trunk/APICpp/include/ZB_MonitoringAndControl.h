@@ -19,6 +19,7 @@
 #define ZB_MONITORINGANDCONTROL_H
 
 #include <map>
+#include <queue>
 #include <utility>
 
 //#include "Thread.h"
@@ -66,24 +67,45 @@ class ZB_MonitoringAndControl: public Thread
 +                                     received from the AT response */
         };
 
-        /** Constructor. By default API mode will be set to use non-escaped control characters (ATAP=1)
+        /** This method purpose is to provide an already created instance to the ZB_MonitoringAndControl object.
+         * \return A ZB_MonitoringAndControl instantiated pointer, or 0 if still to be instantiated.
+         * \note If after calling this method a ZB_MonitoringAndControl pointer is returned with 0, you should first
+         * call the parameterizable getInstance(s) methods.
+         */
+         inline static ZB_MonitoringAndControl* getInstance(){
+             return instance_;
+         }
+
+        /** This method purpose is to return an instance to the ZB_MonitoringAndControl object.
+         * It will create a new instance if not instantiated yet, or just return the current one. In other words, if a class instance
+         * was already created somewhere in the code, it doesn't matter the values of the parameters you set.
+         * By default API mode will be set to use non-escaped control characters (ATAP=1)
          *  The auto update node list feature is turned ON (set to "true") by default.
          * \param device A string holding the tty interface that shall be used to send and receive ZigBee Frames
          *        from / to  controller.
+         * \param max_sample_queue_size An unsigned long holding the maximum size of the sample queue before the oldest samples
+         *        start to be excluded.
+         * \return A ZB_MonitoringAndControl pointer.
          */
-        ZB_MonitoringAndControl(std::string device);
+         static ZB_MonitoringAndControl* getInstance(std::string device, unsigned long max_sample_queue_size);
 
-        /** Default constructor. The auto update node list feature is turned ON (set to "true") by default.
+        /** This method purpose is to return an instance to the ZB_MonitoringAndControl object.
+         * It will create a new instance if not instantiated yet, or just return the current one. In other words, if a class instance
+         * was already created somewhere in the code, it doesn't matter the values of the parameters you set.
+         * The auto update node list feature is turned ON (set to "true") by default.
+         * \param api_mode A enumerated type holding the API mode to use: ESCAPED (ATAP=2) or NON-ESCAPED (ATAP=1)
          * \param device A string holding the tty interface that shall be used to send and receive ZigBee Frames
          *        from / to  controller.
-         * \param api_mode A enumerated type holding the API mode to use: ESCAPED (ATAP=2) or NON-ESCAPED (ATAP=1)
+         * \param max_sample_queue_size An unsigned long holding the maximum size of the sample queue before the oldest samples
+         *        start to be excluded.
+         * \return A ZB_MonitoringAndControl pointer.
          */
-        ZB_MonitoringAndControl(ZB_Frame_TXRX::API_MODE api_mode, std::string device);
+        static ZB_MonitoringAndControl* getInstance(ZB_Frame_TXRX::API_MODE api_mode, std::string device, unsigned long max_sample_queue_size);
 
         /** Copy constructor
          *  \param other Object to copy from
          */
-        ZB_MonitoringAndControl(const ZB_MonitoringAndControl& other);
+        //ZB_MonitoringAndControl(const ZB_MonitoringAndControl& other);
 
         /** Default destructor */
         virtual ~ZB_MonitoringAndControl();
@@ -141,19 +163,29 @@ class ZB_MonitoringAndControl: public Thread
          */
         bool retrieveCommandsResponseBuffer(unsigned char frameID, Resumed_AT_Response& resumedResponse);
 
-        /** This method purpose is to access the IO Sample regarding a given node in the network.
-         * \param node A STL string holding the user defined NodeIdent (information obtain from AT NI),
-         *             or the node network address.
-         * \param io_sample An API_IO_Sample object with the sample frame for the requested node.
-         * \return A boolean value indicating if the an io sample has been found for the requested node.
+        /** This method purpose is to retrieve the IO Sample from the sample queue for processing.
+         * By calling this method the oldest IO Sample is actually removed from the queue and it's reference is passed
+         * through the io_sample pointer.
+         * \param io_sample An API_IO_Sample object with the oldest sample frame in the queue.
+         * \return A boolean value indicating if any IO Sample has been found.
          * \note The reason why the whole API_IO_Sample is returned here and not only the sample itself
          *       is because the IO SAmple data comming from a given XBee depends very much on how many
          *       sensors are being used on that node. For those cases where more than 1 pin is being used
          *       the programmer has also to access the analog and / or digital pin information. Since all this
-         *       information is already in the API_IO_Sample class, there's not great advantage on creating a
+         *       information is already in the API_IO_Sample class, there's no advantage on creating a
          *       subset of this class.
          */
-        bool accessNodeIOSample(std::string node, API_IO_Sample* io_sample);
+        bool retrieveIOSample(API_IO_Sample* io_sample);
+
+        /** This method purpose is to access the IO Sample given any of the node addresses or node ident
+         * without removing it from the sample queue.
+         * \param node An STL string holding the value of any of the 16 or 64 bits addresses or the node ident
+         *             from the node you whish to see the oldest IO Sample in queue.
+         * \param io_sample An API_IO_Sample object with the oldest sample frame in the queue.
+         * \return A boolean value indicating if the an io sample has been found for the requested node.
+         * \sa retrieveIOSample
+         */
+        //bool accessNodeIOSample(std::string node, API_IO_Sample* io_sample);
 
         /**
          * This method has the purpose to collect the network node list
@@ -324,6 +356,24 @@ class ZB_MonitoringAndControl: public Thread
 
     private:
 
+        /** Constructor. By default API mode will be set to use non-escaped control characters (ATAP=1)
+         *  The auto update node list feature is turned ON (set to "true") by default.
+         * \param device A string holding the tty interface that shall be used to send and receive ZigBee Frames
+         *        from / to  controller.
+         * \param max_sample_queue_size An unsigned long holding the maximum size of the sample queue before the oldest samples
+         *        start to be excluded.
+         */
+        ZB_MonitoringAndControl(std::string device, unsigned long max_sample_queue_size);
+
+        /** Default constructor. The auto update node list feature is turned ON (set to "true") by default.
+         * \param api_mode A enumerated type holding the API mode to use: ESCAPED (ATAP=2) or NON-ESCAPED (ATAP=1)
+         * \param device A string holding the tty interface that shall be used to send and receive ZigBee Frames
+         *        from / to  controller.
+         * \param max_sample_queue_size An unsigned long holding the maximum size of the sample queue before the oldest samples
+         *        start to be excluded.
+         */
+        ZB_MonitoringAndControl(ZB_Frame_TXRX::API_MODE api_mode, std::string device, unsigned long max_sample_queue_size);
+
         /** This method is the implementation of the abstract Thread::job.
          * It is this method who will actually implement whatever the thread is suppose to do. In this case, it shall gather in the message pool
          * whatever messages arriving at the serial port.
@@ -361,6 +411,8 @@ class ZB_MonitoringAndControl: public Thread
          */
         bool setRemoteAddressing(API_AT_RemoteCommand* remoteCommand, std::string nodeIdent, std::string address = "");
 
+        static ZB_MonitoringAndControl* instance_; //!< An instance to this class.
+
         bool run_; //!< A boolean variable indicating if this class thread should continue to run or not.
 
         bool auto_update_nodes_; /**< A boolean value indicating if this object should automatically update its node list
@@ -369,6 +421,8 @@ class ZB_MonitoringAndControl: public Thread
                                   */
 
         unsigned char frameId_; //!< An unsigned char variable holding the auto-incrementing frame ID to keep track of AT command responses.
+
+        unsigned long max_sample_queue_size_; //!< An unsigned long holding the maximum number of IO Samples the sample queue can hold without starting to exclude older ones.
 
         std::vector<ZB_Node*> nodeList_; //!< A vector of pointers of ZB_Nodes. This vector shall be use to maintain a list of all active network nodes.
 
@@ -382,7 +436,7 @@ class ZB_MonitoringAndControl: public Thread
                                                                                                         * \sa nodeList_
                                                                                                         */
 
-        std::map< std::string, API_IO_Sample*> nodeSample_map_; //!< A STL map with the node identification as the key and the corresponding sample represented by an API_IO_Sample object.
+        std::queue<API_IO_Sample*> sample_queue_; //!< A STL queue holds the queue of unprocessed samples represented by an API_IO_Sample object.
 
 
         std::vector< std::pair<unsigned char, std::string> > internalAT_frameID_vector_; /**< A STL vector holding a pair of frameID from the AT command issued and the frame string, that should
@@ -395,6 +449,8 @@ class ZB_MonitoringAndControl: public Thread
                                                          */
 
         ZB_Frame_TXRX* txrx_; //!< A pointer to the ZB_Frame_TXRX, that will provide the interface with the XBee controller device.
+
+        sem_t available_samples_; //!< A semaphor to allow effecient sample access without polling queries to check samples existence on the sample queue.
 };
 
 #endif // ZB_MONITORINGANDCONTROL_H
