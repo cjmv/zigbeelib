@@ -82,7 +82,7 @@ class ZB_Node
         /** Copy constructor
          *  \param other Object to copy from
          */
-        ZB_Node(const ZB_Node& other);
+        //ZB_Node(const ZB_Node& other);
 
         /** Default destructor */
         virtual ~ZB_Node();
