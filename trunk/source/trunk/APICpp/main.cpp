@@ -9,6 +9,9 @@
  * $Revision$
  * */
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #include <cppunit/CompilerOutputter.h>
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
@@ -89,7 +92,7 @@ double kelvin2Celsius(double kelvinDeg)
 	return kelvinDeg - (double)273.15;
 }
 
-void getTemperatureCelsius(int hexAD)
+double getTemperatureCelsius(int hexAD)
 {
 	double ADmV = 0.0, kelvin_deg = 0.0, celcius_deg = 0.0;
 
@@ -102,6 +105,8 @@ void getTemperatureCelsius(int hexAD)
 	cout << "Temperature (Kelvin): " << kelvin_deg << " Kelvin" << endl;
 	celcius_deg = kelvin2Celsius(kelvin_deg);
 	cout << "Temperature (Celcius): " << celcius_deg << "ºC" << endl;
+
+	return celcius_deg;
 
 }
 
@@ -402,6 +407,7 @@ void useMC()
             string sample = "";
             API_IO_Sample *io_sample = new API_IO_Sample();
             unsigned short pin = 0;
+            double celcius_dg = 0.0;
 
             if (mc->retrieveIOSample(io_sample)){
 
@@ -426,11 +432,22 @@ void useMC()
                             sample = io_sample->getAnalogSamples()[i].second;
 
                             if(pin == 0){
-                                getTemperatureCelsius((unsigned char)sample[0]*0x100 + (unsigned char)sample[1]);
+                                celcius_dg = getTemperatureCelsius((unsigned char)sample[0]*0x100 + (unsigned char)sample[1]);
                             }
 
                             else if (pin == 1){
-                                getHumidity((unsigned char)sample[0]*0x100 + (unsigned char)sample[1], 21.7474);
+                                getHumidity((unsigned char)sample[0]*0x100 + (unsigned char)sample[1], celcius_dg);
+                            }
+
+                            else if(pin == 2){
+                                double mv = AD_output_to_mV((unsigned char)sample[0]*0x100 + (unsigned char)sample[1]);
+                                cout << "AD(mv): " << mv << endl;
+
+                                if(mv < 1000){
+                                    cout << "Door open! Sending email..." << flush;
+                                    system("sendmail raven.cv@gmail.com < /home/cjmv/temp/teste.mail");
+                                    cout << "Done!" << endl;
+                                }
                             }
                         }
                     }
@@ -579,7 +596,7 @@ void useMC()
             }
             else if (string(option).find("IR") != string::npos){
 
-                mc->setIOSampleRate("END POINT", 3000);
+                mc->setIOSampleRate("ROUTER", 10000);
             }
             else if(string(option).find("getNI") != string::npos){
 
@@ -606,7 +623,7 @@ void useMC()
         else if (string(option).find("write") != string::npos)
 
             // Writing changes to router.
-            mc->writeChanges("END POINT");
+            mc->writeChanges("ROUTER");
 
         else if (string(option).compare("quit") == 0){
 

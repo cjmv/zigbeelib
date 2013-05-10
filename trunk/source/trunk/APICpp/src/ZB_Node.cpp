@@ -61,10 +61,10 @@ ZB_Node::~ZB_Node()
     //dtor
 }
 
-ZB_Node::ZB_Node(const ZB_Node& other)
+/*ZB_Node::ZB_Node(const ZB_Node& other)
 {
     //copy ctor
-}
+}*/
 
 /*ZB_Node& ZB_Node::operator=(const ZB_Node& rhs)
 {
