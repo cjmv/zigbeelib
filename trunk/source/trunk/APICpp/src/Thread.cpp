@@ -15,6 +15,7 @@ using namespace std;
 // Default constructor
 Thread::Thread()
 {
+    pthread_attr_init(&thread_attr_);
 	pthread_mutex_init(&mutex_, 0);
 }
 
@@ -23,6 +24,7 @@ Thread::~Thread()
 {
 	pthread_join(pthread_, 0);
 	pthread_mutex_destroy(&mutex_);
+	pthread_attr_destroy(&thread_attr_);
 }
 
 // Execute method
@@ -37,7 +39,8 @@ void* Thread::execute(void* arg)
 // openThread method
 void Thread::openThread()
 {
-	if (pthread_create(&pthread_, 0, &execute, this) != 0)
+    pthread_attr_setdetachstate(&thread_attr_, PTHREAD_CREATE_JOINABLE);
+	if (pthread_create(&pthread_, &thread_attr_, &execute, this) != 0)
 	{
 		cerr << "Thread creating failed..." << endl;
 		//run_ = false;
