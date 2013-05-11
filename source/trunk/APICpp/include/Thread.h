@@ -4,6 +4,8 @@
 /// It is based on pthreads and it's foreseen to be used while the official support from the new C++11 is not fully
 /// implemented on GNU gcc.
 /// This class can not be directly instantiated.
+/// \note The created thread shall be JOINABLE.
+/// \todo The Thread class should be parameterized to accept the creation of other type of threads beside JOINABLE ones.
 ///
 /*
  * $Author$
@@ -83,6 +85,7 @@ private:
 
 	pthread_t pthread_; /*!< pthread_t member variable to hold the thread that shall be used. */
 	pthread_mutex_t mutex_; /*!< pthread_mutex_t memeber variable to provide mutex support to the opened thread. */
+	pthread_attr_t thread_attr_; /*!< pthread_attr_t member variable to be set with the thread attributes. */
 
 
 };
