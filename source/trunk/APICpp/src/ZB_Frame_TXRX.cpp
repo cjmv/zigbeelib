@@ -103,7 +103,7 @@ void ZB_Frame_TXRX::accessMessagePool(string& message)
             lock();
             messagePool_.push_back(message); // message was not empty, thus this call has the purpose to add one more message to the pool.
             unlock();
-            cout << "New message available" << endl;
+            //cout << "DEBUG: New message available" << endl;
             sem_post(&available_messages_);
         }
     //}
@@ -120,7 +120,7 @@ void ZB_Frame_TXRX::job()
 	string message = "";
     struct termios tio;
 
-    cout << "DEBUG: Running TXRX job..." << endl;
+    //cout << "DEBUG: Running TXRX job..." << endl;
 
     cfmakeraw(&tio);
     cfsetospeed(&tio,B9600);            // 9600 baud
@@ -267,6 +267,8 @@ void ZB_Frame_TXRX::sendMessage(string message)
 		exit(1);
 	}
 	cout << "Command sent..." << endl;
+
+	delete[] buff;
 }
 
 // removeEscapes method

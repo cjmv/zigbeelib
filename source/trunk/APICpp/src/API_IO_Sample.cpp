@@ -48,6 +48,8 @@ API_IO_Sample::API_IO_Sample(unsigned int length, FrameType frameType, unsigned 
 API_IO_Sample::~API_IO_Sample()
 {
     //dtor
+    digitalSamples_.clear();
+    analogSamples_.clear();
 }
 
 /*API_IO_Sample& API_IO_Sample::operator=(const API_IO_Sample& rhs)
