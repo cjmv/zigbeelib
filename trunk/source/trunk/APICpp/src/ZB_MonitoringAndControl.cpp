@@ -10,6 +10,7 @@
  * */
 
 #include "ZB_MonitoringAndControl.h"
+//#include <fstream> // DEBUG
 
 using namespace std;
 
@@ -106,7 +107,7 @@ bool ZB_MonitoringAndControl::retrieveCommandsResponseBuffer(unsigned char frame
 }
 
 // retrieveIOSample method
-bool ZB_MonitoringAndControl::retrieveIOSample(API_IO_Sample* io_sample)
+bool ZB_MonitoringAndControl::retrieveIOSample(API_IO_Sample** io_sample)
 {
 
     bool found = false;
@@ -120,7 +121,7 @@ bool ZB_MonitoringAndControl::retrieveIOSample(API_IO_Sample* io_sample)
     lock();
     {
         if(!sample_queue_.empty()){
-            *io_sample = *sample_queue_.front();
+            *io_sample = sample_queue_.front();
             sample_queue_.pop();
             found = true;
         }
@@ -434,18 +435,18 @@ void ZB_MonitoringAndControl::job()
     string message = "";
     API_Frame* frame;
 
-    cout << "DEBUG: Running MC Job..." << endl;
+    //cout << "DEBUG: Running MC Job..." << endl;
 
     while(run_)
     {
         txrx_->accessMessagePool(message);
 
         if(message.compare("") != 0){
-            cout << "DEBUG: Message received: ";
-            for(unsigned int x = 0; x < message.length(); x++){
+            //cout << "DEBUG: Message received: ";
+            /*for(unsigned int x = 0; x < message.length(); x++){
                 cout << hex << (int)(unsigned char)message[x] << " ";
-            }
-            cout << endl;
+            }*/
+            //cout << endl;
             switch((unsigned char)message[3])
             {
 
@@ -491,20 +492,25 @@ void ZB_MonitoringAndControl::job()
                 {
                     bool newNodeFound = true;
                     string sample = "";
-                    API_IO_Sample* io_sample;
+                    //ofstream file("created", ofstream::app|ofstream::out); // DEBUG
+                    API_IO_Sample* io_sample = new API_IO_Sample();
+                    //file << io_sample << endl;
+                    //file.close();
 
-                    cout << "It's an IO Sample" << endl;
-                    frame = new API_IO_Sample();
-                    frame->parseFrame(message);
+                    //cout << "It's an IO Sample" << endl;
+                    //frame = new API_IO_Sample();
+                    //io_sample = new API_IO_Sample();
+                    //frame->parseFrame(message);
+                    io_sample->parseFrame(message);
 
-                    io_sample = dynamic_cast<API_IO_Sample*>(frame);
+                    //io_sample = dynamic_cast<API_IO_Sample*>(frame);
                     sample = io_sample->getAnalogSamples().begin()->second;
 
-                    cout << endl << "Source Network Address:" << hex;
+                    /*cout << endl << "Source Network Address:" << hex;
                     for(unsigned int x = 0; x < io_sample->getSourceNetworkAddress().size(); x++){
                         cout << (int)(unsigned char)io_sample->getSourceNetworkAddress()[x] << " ";
                     }
-                    cout << endl;
+                    cout << endl;*/
 
                     sendQeuedCommands(io_sample->getSourceNetworkAddress());
 
@@ -528,18 +534,19 @@ void ZB_MonitoringAndControl::job()
 
                                     newNodeFound = false;
                                     lock();
-                                    cout << "Number of samples queued: " << dec << sample_queue_.size() << endl;
+                                    //cout << "Number of samples queued: " << dec << sample_queue_.size() << endl;
                                     if(sample_queue_.size() >= max_sample_queue_size_){
 
                                         API_IO_Sample *to_exclude = sample_queue_.front();
                                         sample_queue_.pop();
                                         delete to_exclude;
                                     }
+                                    //cout << "Sample queue size: " << sample_queue_.size() << endl;
                                     sample_queue_.push(io_sample);
                                     unlock();
                                     sem_post(&available_samples_);
                                     //nodeSample_map_[nodeList_[i]->getNodeIdent()] = io_sample;
-                                    cout << "DEBUG: IO Frame length: " << io_sample->getLength() << endl;
+                                    //cout << "DEBUG: IO Frame length: " << io_sample->getLength() << endl;
                                     //cout << "From map:" << endl << "\t";
                                     /*map<string, API_IO_Sample*>::iterator it = nodeSample_map_.find("END POINT");
                                     if (it != nodeSample_map_.end()){
@@ -547,7 +554,7 @@ void ZB_MonitoringAndControl::job()
                                         cout << it->second->getLength() << endl;
                                     }
                                     break;*/
-                                    cout << "Source: " << nodeList_[i]->getNodeIdent() << endl;
+                                    //cout << "Source: " << nodeList_[i]->getNodeIdent() << endl;
                                     break;
                                 }
                             }
@@ -584,8 +591,13 @@ void ZB_MonitoringAndControl::job()
                                 delete generatedFrame;
                             }
                         }
-                        else
+                        else{
+                            //ofstream deleted_file("deleted", ofstream::app); // DEBUG
                             discoverNetworkNodes();
+                            //deleted_file << io_sample << endl;
+                            //deleted_file.close();
+                            delete io_sample;
+                        }
                     }
 
 

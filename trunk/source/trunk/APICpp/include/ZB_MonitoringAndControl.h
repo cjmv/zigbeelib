@@ -166,7 +166,7 @@ class ZB_MonitoringAndControl: public Thread
         /** This method purpose is to retrieve the IO Sample from the sample queue for processing.
          * By calling this method the oldest IO Sample is actually removed from the queue and it's reference is passed
          * through the io_sample pointer.
-         * \param io_sample An API_IO_Sample object with the oldest sample frame in the queue.
+         * \param io_sample A reference to an API_IO_Sample pointer with the oldest sample frame in the queue.
          * \return A boolean value indicating if any IO Sample has been found.
          * \note The reason why the whole API_IO_Sample is returned here and not only the sample itself
          *       is because the IO SAmple data comming from a given XBee depends very much on how many
@@ -175,7 +175,7 @@ class ZB_MonitoringAndControl: public Thread
          *       information is already in the API_IO_Sample class, there's no advantage on creating a
          *       subset of this class.
          */
-        bool retrieveIOSample(API_IO_Sample* io_sample);
+        bool retrieveIOSample(API_IO_Sample** io_sample);
 
         /** This method purpose is to access the IO Sample given any of the node addresses or node ident
          * without removing it from the sample queue.
@@ -351,6 +351,13 @@ class ZB_MonitoringAndControl: public Thread
          * \note The node pointer shall be dealt with within the method. Do not try to delete or change the pointer.
          */
         void updateNodeList(ZB_Node* node);
+
+        /** This method only purpose is to return the queue size of samples to process.
+         * \return An unsigned integer holding the size of samples in queue to be processed.
+         */
+        inline unsigned int getSampleQueueSize(){
+            return sample_queue_.size();
+        }
 
     protected:
 
