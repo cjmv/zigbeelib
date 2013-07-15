@@ -373,7 +373,7 @@ void useMC()
     char option[256];
     string message = "";
 
-    ZB_MonitoringAndControl *mc = ZB_MonitoringAndControl::getInstance("/dev/ttyUSB0", 10);
+    ZB_MonitoringAndControl *mc = ZB_MonitoringAndControl::getInstance("/dev/ttyUSB0", 100);
 
     mc->startMonitoring();
     sleep(2);
@@ -409,7 +409,7 @@ void useMC()
             unsigned short pin = 0;
             double celcius_dg = 0.0;
 
-            if (mc->retrieveIOSample(io_sample)){
+            if (mc->retrieveIOSample(&io_sample)){
 
                 cout << "DEBUG: IO Frame length: " << io_sample->getLength() << endl;
 
@@ -624,6 +624,15 @@ void useMC()
 
             // Writing changes to router.
             mc->writeChanges("ROUTER");
+
+        else if (string(option). find("high") != string::npos)
+        {
+            mc->sendATCommand("RELAY", "", "D0", mc->int2Hex((unsigned int)5));
+        }
+        else if (string(option). find("low") != string::npos)
+        {
+            mc->sendATCommand("RELAY", "", "D0", mc->int2Hex((unsigned int)4));
+        }
 
         else if (string(option).compare("quit") == 0){
 
