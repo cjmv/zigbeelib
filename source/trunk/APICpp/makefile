@@ -1,6 +1,6 @@
 # ZigBeeLib compilation file
+# $Header$
 # $Author: cvicente $
-# $Id$
 # $Date: 2013-07-30 17:47:08 +0100 (Tue, 30 Jul 2013) $
 # $Revision: 100 $
 
@@ -20,3 +20,9 @@ libZBAPICpp.a: $(objects)
 
 clean:
 	rm -f $(objects) libZBAPICpp.a
+
+install:
+	mkdir /usr/local/lib/ZBAPICpp
+	cp libZBAPICpp.a /usr/local/lib/ZBAPICpp/
+	mkdir /usr/local/include/ZBAPICpp
+	cp include/* /usr/local/include/ZBAPICpp/
