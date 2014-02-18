@@ -163,10 +163,10 @@ class ZB_MonitoringAndControl: public Thread
          */
         bool retrieveCommandsResponseBuffer(unsigned char frameID, Resumed_AT_Response& resumedResponse);
 
-        /** This method purpose is to retrieve the IO Sample from the sample queue for processing.
-         * By calling this method the oldest IO Sample is actually removed from the queue and it's reference is passed
+        /** This method purpose is to retrieve the RX Packet from the sample queue for processing.
+         * By calling this method the oldest RX Packet is actually removed from the queue and it's reference is passed
          * through the io_sample pointer.
-         * \param io_sample A reference to an API_IO_Sample pointer with the oldest sample frame in the queue.
+         * \param rx_packet A reference to an API_Receive_Packet pointer with the oldest sample frame in the queue.
          * \return A boolean value indicating if any IO Sample has been found.
          * \note The reason why the whole API_IO_Sample is returned here and not only the sample itself
          *       is because the IO SAmple data comming from a given XBee depends very much on how many
@@ -175,7 +175,7 @@ class ZB_MonitoringAndControl: public Thread
          *       information is already in the API_IO_Sample class, there's no advantage on creating a
          *       subset of this class.
          */
-        bool retrieveIOSample(API_IO_Sample** io_sample);
+        bool retrieveRXPacket(API_Receive_Packet** rx_packet);
 
         /** This method purpose is to access the IO Sample given any of the node addresses or node ident
          * without removing it from the sample queue.
@@ -356,7 +356,7 @@ class ZB_MonitoringAndControl: public Thread
          * \return An unsigned integer holding the size of samples in queue to be processed.
          */
         inline unsigned int getSampleQueueSize(){
-            return sample_queue_.size();
+            return rx_sample_queue_.size();
         }
 
     protected:
@@ -433,7 +433,7 @@ class ZB_MonitoringAndControl: public Thread
 
         std::vector<ZB_Node*> nodeList_; //!< A vector of pointers of ZB_Nodes. This vector shall be use to maintain a list of all active network nodes.
 
-        std::map< unsigned char, Resumed_AT_Response > commandsResponse_buffer_; /**< A STL map holding the unseen commands responses.
+        std::map<unsigned char, std::pair<sem_t, Resumed_AT_Response> > commandsResponse_buffer_; /**< A STL map holding the unseen commands responses.
                                                                                                         * This map key is the an unsigned char representing the frame ID to which the AT response refers to.
                                                                                                         * The object is a pair composed by the CommandStatus enumerated type (holding the respective command status)
                                                                                                         * and a STL string for those cases where the AT command returns a given node registry value.
@@ -443,12 +443,12 @@ class ZB_MonitoringAndControl: public Thread
                                                                                                         * \sa nodeList_
                                                                                                         */
 
-        std::queue<API_IO_Sample*> sample_queue_; //!< A STL queue holds the queue of unprocessed samples represented by an API_IO_Sample object.
+        std::queue<API_Receive_Packet*> rx_sample_queue_; //!< A STL queue holds the queue of unprocessed samples represented by an API_Receive_Packet object.
 
 
         std::vector< std::pair<unsigned char, std::string> > internalAT_frameID_vector_; /**< A STL vector holding a pair of frameID from the AT command issued and the frame string, that should
-                                                                * be dealt internally.
-                                                                */
+                                                                                          * be dealt internally.
+                                                                                          */
 
         std::vector<API_AT_Command*> qeuedAT_Commands_vector_; /** < A STL vector holding the AT Commands queued to be issued. Tipically used, to send
                                                          * AT commands to sleeping END POINTS. The only requirement is that the Sleeping END POINT
