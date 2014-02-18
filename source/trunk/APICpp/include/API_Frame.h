@@ -114,6 +114,7 @@ class API_Frame
         inline FrameType getFrameType() {
             return frameType_;
         }
+
         ///
         /// Set method for the ZigBee standart API Frame Type.
         ///@param frameType A FrameType enumerated value holding the standart ZigBee API frame type to be set.

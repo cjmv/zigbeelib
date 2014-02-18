@@ -402,51 +402,85 @@ void useMC()
             }
         }
 
-        else if(string(option).compare("sample") == 0){
+        else if(string(option).compare("") == 0){
 
             string sample = "";
-            API_IO_Sample *io_sample = new API_IO_Sample();
+            API_Receive_Packet *rx_packet = new API_Receive_Packet();
+            //API_IO_Sample *io_sample = new API_IO_Sample();
             unsigned short pin = 0;
             double celcius_dg = 0.0;
 
-            if (mc->retrieveIOSample(&io_sample)){
+            if (mc->retrieveRXPacket(&rx_packet)){
 
-                cout << "DEBUG: IO Frame length: " << io_sample->getLength() << endl;
+                cout << "DEBUG: RX Packet length: " << rx_packet->getLength() << endl;
 
                 vector<ZB_Node*> nodeList = mc->getNodeList();
 
                 for(unsigned int i = 0; i < nodeList.size(); i++){
 
-                    if(io_sample->getSourceNetworkAddress().compare(nodeList[i]->getNetworkAddr()) == 0){
+                    if(rx_packet->getSourceNetworkAddress().compare(nodeList[i]->getNetworkAddr()) == 0){
 
-                        cout << "Retrieved sample for " << nodeList[i]->getNodeIdent() << endl;
-                        cout << "Number of digital pins reading high: "  << io_sample->getDigitalSamples().size() << endl;
-                        cout << "Number of analog pins with samples: " << io_sample->getAnalogSamples().size() << endl;
+                        /*if(rx_packet->getFrameType() == API_Frame::IO_RX_SAMPLE){
 
-                        // Going through analog samples
-                        for (unsigned int i = 0; i < io_sample->getAnalogSamples().size(); i++){
+                            API_IO_Sample* io_sample = new API_IO_Sample();
 
-                            pin = io_sample->getAnalogSamples()[i].first;
-                            cout << "Pin: " << pin << endl;
+                            io_sample = dynamic_cast<API_IO_Sample*>(rx_packet);
 
-                            sample = io_sample->getAnalogSamples()[i].second;
+                            cout << "Retrieved sample for " << nodeList[i]->getNodeIdent() << endl;
+                            cout << "Number of digital pins reading high: "  << io_sample->getDigitalSamples().size() << endl;
+                            cout << "Number of analog pins with samples: " << io_sample->getAnalogSamples().size() << endl;
 
-                            if(pin == 0){
-                                celcius_dg = getTemperatureCelsius((unsigned char)sample[0]*0x100 + (unsigned char)sample[1]);
+                            // Going through analog samples
+                            for (unsigned int i = 0; i < io_sample->getAnalogSamples().size(); i++){
+
+                                pin = io_sample->getAnalogSamples()[i].first;
+                                cout << "Pin: " << pin << endl;
+
+                                sample = io_sample->getAnalogSamples()[i].second;
+
+                                if(pin == 0){
+                                    celcius_dg = getTemperatureCelsius((unsigned char)sample[0]*0x100 + (unsigned char)sample[1]);
+                                }
+
+                                else if (pin == 1){
+                                    getHumidity((unsigned char)sample[0]*0x100 + (unsigned char)sample[1], celcius_dg);
+                                }
+
+                                else if(pin == 2){
+                                    double mv = AD_output_to_mV((unsigned char)sample[0]*0x100 + (unsigned char)sample[1]);
+                                    cout << "AD(mv): " << mv << endl;
+
+                                    if(mv < 1000){
+                                        cout << "Door open! Sending email..." << flush;
+                                        system("sendmail raven.cv@gmail.com < /home/cjmv/temp/teste.mail");
+                                        cout << "Done!" << endl;
+                                    }
+                                }
                             }
+                            delete io_sample;
+                        }*/
 
-                            else if (pin == 1){
-                                getHumidity((unsigned char)sample[0]*0x100 + (unsigned char)sample[1], celcius_dg);
-                            }
+                        if(rx_packet->getFrameType() == API_Frame::RX_PACKET){
 
-                            else if(pin == 2){
-                                double mv = AD_output_to_mV((unsigned char)sample[0]*0x100 + (unsigned char)sample[1]);
-                                cout << "AD(mv): " << mv << endl;
+                            cout << rx_packet->getReceivedData() << endl;
+                            delete rx_packet;
+                        }
+                        else if(rx_packet->getFrameType() == API_Frame::IO_RX_SAMPLE){
 
-                                if(mv < 1000){
-                                    cout << "Door open! Sending email..." << flush;
-                                    system("sendmail raven.cv@gmail.com < /home/cjmv/temp/teste.mail");
-                                    cout << "Done!" << endl;
+                            API_IO_Sample *io_sample = dynamic_cast<API_IO_Sample*>(rx_packet);
+
+                            // Going through analog samples
+                            for (unsigned int i = 0; i < io_sample->getAnalogSamples().size(); i++){
+
+                                pin = io_sample->getAnalogSamples()[i].first;
+                                cout << "Pin: " << pin << endl;
+
+                                sample = io_sample->getAnalogSamples()[i].second;
+
+                                if(pin == 0){
+                                    double mv = AD_output_to_mV((unsigned char)sample[0]*0x100 + (unsigned char)sample[1]);
+
+                                    cout << "Temperature: " << (double)mv/10.0 << " ºC" << endl;
                                 }
                             }
                         }
@@ -455,8 +489,6 @@ void useMC()
             }
             else
                 cout << "No Sample found!" << endl;
-
-            delete io_sample;
         }
 
         /*else if(string(option).compare("sample ROUTER") == 0){
@@ -627,11 +659,19 @@ void useMC()
 
         else if (string(option). find("high") != string::npos)
         {
-            mc->sendATCommand("RELAY", "", "D0", mc->int2Hex((unsigned int)5));
+            mc->sendATCommand("ACTUATOR", "", "D0", mc->int2Hex((unsigned int)5));
         }
         else if (string(option). find("low") != string::npos)
         {
-            mc->sendATCommand("RELAY", "", "D0", mc->int2Hex((unsigned int)4));
+            mc->sendATCommand("ACTUATOR", "", "D0", mc->int2Hex((unsigned int)4));
+        }
+        else if (string(option). find("AO") != string::npos)
+        {
+            mc->sendATCommand("", "", "AO");
+        }
+        else if (string(option). find("RO") != string::npos)
+        {
+            mc->sendATCommand("XBARDUINO", "", "R0", mc->int2Hex((unsigned int)100));
         }
 
         else if (string(option).compare("quit") == 0){

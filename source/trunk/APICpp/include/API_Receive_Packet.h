@@ -135,6 +135,14 @@ class API_Receive_Packet : public API_Frame
          */
         virtual std::string getFrame();
 
+        ///
+        /// Get method for the ZigBee standart API Frame Type.
+        ///@return Returns FrameType enumerated value holding the ZigBee standart API frame type.
+        ///
+        inline API_Frame::FrameType getFrameType() {
+            return frameType_;
+        }
+
     protected:
 
         std::string sourceAddress_; //!< A string holding the value of the message source address.

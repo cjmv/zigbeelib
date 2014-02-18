@@ -90,24 +90,82 @@ ZB_MonitoringAndControl& ZB_MonitoringAndControl::operator=(const ZB_MonitoringA
 bool ZB_MonitoringAndControl::retrieveCommandsResponseBuffer(unsigned char frameID, Resumed_AT_Response& commandResponse)
 {
     bool found = false;
+    timespec timeout;
+    sem_t response_available;
+    map<unsigned char, pair<sem_t,Resumed_AT_Response> >::iterator it;
 
+    clock_gettime(CLOCK_REALTIME, &timeout);
+
+    timeout.tv_sec += 30;
+
+
+    /* NEW method implementation */
     lock();
     {
-        map<unsigned char, Resumed_AT_Response>::iterator it = commandsResponse_buffer_.find(frameID);
+        it = commandsResponse_buffer_.find(frameID);
         if(it != commandsResponse_buffer_.end()){
 
-            commandResponse = it->second;
+            //sem_timedwait(&available_samples_, &timeout);
+            response_available = it->second.first;
+            /*commandResponse = it->second.second;
+            commandsResponse_buffer_.erase(it);
+            found = true;*/
+        }
+        else{
+
+            Resumed_AT_Response response;
+            response.commandStatus = API_AT_CommandResponse::UNKOWN_STATUS;
+            response.parameterValueType = NO_TYPE;
+
+            sem_init(&response_available, 0, 0);
+            commandsResponse_buffer_[frameId_] = make_pair(response_available, response);
+        }
+    }
+    unlock();
+
+    // wait for semaphore.
+    sem_timedwait(&response_available, &timeout);
+    lock();
+    {
+        it = commandsResponse_buffer_.find(frameID);
+        if(it != commandsResponse_buffer_.end() && (it->second.second.commandStatus != API_AT_CommandResponse::UNKOWN_STATUS ||
+                                                    it->second.second.parameterValueType != NO_TYPE)){
+
+            commandResponse = it->second.second;
+            sem_destroy(&response_available);
             commandsResponse_buffer_.erase(it);
             found = true;
         }
     }
     unlock();
+    /*   *********************** */
+
+
+
+    /*lock();
+    {
+        map<unsigned char, Resumed_AT_Response>::iterator it = commandsResponse_buffer_.find(frameID);
+        if(it != commandsResponse_buffer_.end()){
+
+            sem_timedwait(&available_samples_, &timeout);
+            commandResponse = it->second.second;
+            commandsResponse_buffer_.erase(it);
+            found = true;
+        }
+        else{
+            sem_t response_available;
+            Resumed_AT_Response response;
+            sem_init(&response_available, 0, 0);
+            commandsResponse_buffer_[frameId_] = make_pair(response_available, response);
+        }
+    }
+    unlock();*/
 
     return found;
 }
 
-// retrieveIOSample method
-bool ZB_MonitoringAndControl::retrieveIOSample(API_IO_Sample** io_sample)
+// retrieveRXPacket method
+bool ZB_MonitoringAndControl::retrieveRXPacket(API_Receive_Packet** rx_packet)
 {
 
     bool found = false;
@@ -120,9 +178,9 @@ bool ZB_MonitoringAndControl::retrieveIOSample(API_IO_Sample** io_sample)
     sem_timedwait(&available_samples_, &timeout);
     lock();
     {
-        if(!sample_queue_.empty()){
-            *io_sample = sample_queue_.front();
-            sample_queue_.pop();
+        if(!rx_sample_queue_.empty()){
+            *rx_packet = rx_sample_queue_.front();
+            rx_sample_queue_.pop();
             found = true;
         }
     }
@@ -477,11 +535,82 @@ void ZB_MonitoringAndControl::job()
                     break;
 
                 case API_Frame::RX_PACKET:
-
+                {
                     cout << "It's a RECEIVE PACKET" << endl;
-                    frame = new API_Receive_Packet();
-                    frame->parseFrame(message);
+
+                    bool newNodeFound = true;
+                    API_Receive_Packet* rx_packet = new API_Receive_Packet();
+
+                    rx_packet->parseFrame(message);
+                    cout << "received data: " << rx_packet->getReceivedData() << endl;
+
+                    // Send any queued messages saved for this io_sample node.
+                    sendQeuedCommands(rx_packet->getSourceNetworkAddress());
+
+                    if(auto_update_nodes_){
+
+                        if(!nodeList_.empty()){
+
+                            for(unsigned int i = 0; i < nodeList_.size(); i++){
+
+                                if(nodeList_[i]->getNetworkAddr().compare(rx_packet->getSourceNetworkAddress()) == 0){
+
+                                    newNodeFound = false;
+                                    lock();
+
+                                    if(rx_sample_queue_.size() >= max_sample_queue_size_){
+
+                                        API_Receive_Packet *to_exclude = rx_sample_queue_.front();
+                                        rx_sample_queue_.pop();
+                                        delete to_exclude;
+                                    }
+
+                                    rx_sample_queue_.push(rx_packet);
+                                    unlock();
+                                    sem_post(&available_samples_);
+
+                                    break;
+                                }
+                            }
+
+                            // I'll have to check the NI from the sourceNetworkAddress and only then
+                            // call the discoverNetworkNodes with the NI response as the parameter.
+                            if(newNodeFound){
+
+                                cout << "DEBUG: New node found!..." << endl;
+
+                                /* Started new code for auto-discovery */
+                                unsigned char frameId;
+                                string* generatedFrame = new string("");
+                                ZB_Node* node = new ZB_Node();
+
+                                node->setSerialNumberHigh(rx_packet->getSourceAddress().substr(0, 4));
+                                node->setSerialNumberLow(rx_packet->getSourceAddress().substr(4, 4));
+                                node->setNetworkAddr(rx_packet->getSourceNetworkAddress());
+
+                                // Add network address of node to network node list.
+                                lock();
+                                    nodeList_.push_back(node);
+                                unlock();
+
+                                // Send AT command ("AT NI") to newly found node
+                                frameId = sendATCommand(rx_packet->getSourceNetworkAddress(),
+                                                        rx_packet->getSourceAddress(),
+                                                        "NI", "", false, API_AT_RemoteCommand::APPLY_CH, generatedFrame);
+
+                                internalAT_frameID_vector_.push_back(make_pair(frameId, *generatedFrame));
+
+                                delete generatedFrame;
+                            }
+                        }
+                        else{
+                            discoverNetworkNodes();
+                            delete rx_packet;
+                        }
+                    }
+
                     break;
+                }
 
                 case API_Frame::EADDRESS_RX_PACKET:
 
@@ -490,71 +619,38 @@ void ZB_MonitoringAndControl::job()
 
                 case API_Frame::IO_RX_SAMPLE:
                 {
-                    bool newNodeFound = true;
-                    string sample = "";
-                    //ofstream file("created", ofstream::app|ofstream::out); // DEBUG
-                    API_IO_Sample* io_sample = new API_IO_Sample();
-                    //file << io_sample << endl;
-                    //file.close();
 
-                    //cout << "It's an IO Sample" << endl;
-                    //frame = new API_IO_Sample();
-                    //io_sample = new API_IO_Sample();
-                    //frame->parseFrame(message);
+                    cout << "It's a IO SAMPLE" << endl;
+                    bool newNodeFound = true;
+                    API_IO_Sample* io_sample = new API_IO_Sample();
+
                     io_sample->parseFrame(message);
 
-                    //io_sample = dynamic_cast<API_IO_Sample*>(frame);
-                    sample = io_sample->getAnalogSamples().begin()->second;
-
-                    /*cout << endl << "Source Network Address:" << hex;
-                    for(unsigned int x = 0; x < io_sample->getSourceNetworkAddress().size(); x++){
-                        cout << (int)(unsigned char)io_sample->getSourceNetworkAddress()[x] << " ";
-                    }
-                    cout << endl;*/
-
+                    // Send any queued messages saved for this io_sample node.
                     sendQeuedCommands(io_sample->getSourceNetworkAddress());
 
                     if(auto_update_nodes_){
 
                         if(!nodeList_.empty()){
 
-                            //cout << "Comparing..." << endl;
                             for(unsigned int i = 0; i < nodeList_.size(); i++){
-
-                                /*cout << *networkNodes[i];
-
-                                cout << endl << "Source Network Address:" << hex;
-                                for(unsigned int x = 0; x < io_sample->getSourceNetworkAddress().size(); x++){
-                                    cout << (int)(unsigned char)io_sample->getSourceNetworkAddress()[x] << " ";
-                                }
-
-                                cout << dec << endl;*/
 
                                 if(nodeList_[i]->getNetworkAddr().compare(io_sample->getSourceNetworkAddress()) == 0){
 
                                     newNodeFound = false;
                                     lock();
-                                    //cout << "Number of samples queued: " << dec << sample_queue_.size() << endl;
-                                    if(sample_queue_.size() >= max_sample_queue_size_){
 
-                                        API_IO_Sample *to_exclude = sample_queue_.front();
-                                        sample_queue_.pop();
+                                    if(rx_sample_queue_.size() >= max_sample_queue_size_){
+
+                                        API_Receive_Packet *to_exclude = rx_sample_queue_.front();
+                                        rx_sample_queue_.pop();
                                         delete to_exclude;
                                     }
-                                    //cout << "Sample queue size: " << sample_queue_.size() << endl;
-                                    sample_queue_.push(io_sample);
+
+                                    rx_sample_queue_.push(io_sample);
                                     unlock();
                                     sem_post(&available_samples_);
-                                    //nodeSample_map_[nodeList_[i]->getNodeIdent()] = io_sample;
-                                    //cout << "DEBUG: IO Frame length: " << io_sample->getLength() << endl;
-                                    //cout << "From map:" << endl << "\t";
-                                    /*map<string, API_IO_Sample*>::iterator it = nodeSample_map_.find("END POINT");
-                                    if (it != nodeSample_map_.end()){
 
-                                        cout << it->second->getLength() << endl;
-                                    }
-                                    break;*/
-                                    //cout << "Source: " << nodeList_[i]->getNodeIdent() << endl;
                                     break;
                                 }
                             }
@@ -585,25 +681,16 @@ void ZB_MonitoringAndControl::job()
                                                         "NI", "", false, API_AT_RemoteCommand::APPLY_CH, generatedFrame);
 
                                 internalAT_frameID_vector_.push_back(make_pair(frameId, *generatedFrame));
-                                /*internalAT_frameID_vector_.push_back(sendATCommand(io_sample->getSourceNetworkAddress(),
-                                              io_sample->getSourceAddress(),"NI"));*/
 
                                 delete generatedFrame;
                             }
                         }
                         else{
-                            //ofstream deleted_file("deleted", ofstream::app); // DEBUG
                             discoverNetworkNodes();
-                            //deleted_file << io_sample << endl;
-                            //deleted_file.close();
                             delete io_sample;
                         }
                     }
 
-
-                    //getTemperatureCelsius((unsigned char)sample[0]*0x100 + (unsigned char)sample[1]);
-
-                    //delete io_sample;
                     break;
                 }
                 case API_Frame::NODE_IDENT:
@@ -683,8 +770,24 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
                     resumedATResponse.parameterValueType = UNSIGNED_INT;
                     resumedATResponse.parameterValue.ui_value = at_response->get_ATBD_Value();
 
+                    lock();
+                    {
+                        map<unsigned char, pair<sem_t, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
+                        if(it == commandsResponse_buffer_.end()){
 
-                    commandsResponse_buffer_[at_response->getFrameId()] = resumedATResponse;
+                            sem_t response_available;
+                            sem_init(&response_available, 0, 0);
+                            sem_post(&response_available);
+                            commandsResponse_buffer_[at_response->getFrameId()] = make_pair(response_available, resumedATResponse);
+                        }
+                        else{
+
+                            it->second.second = resumedATResponse;
+                            sem_post(&(it->second.first));
+                        }
+
+                    }
+                    unlock();
 
                     break;
                 }
@@ -723,10 +826,25 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
                         resumedATResponse.parameterValueType = STRING;
                         resumedATResponse.s_value = at_response->getParameterValue();
 
-                        commandsResponse_buffer_[at_response->getFrameId()] = resumedATResponse;
+                        lock();
+                        {
+                            map<unsigned char, pair<sem_t, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
+                            if(it == commandsResponse_buffer_.end()){
 
-                        cout << "DEBUG: Received response: ADDR_CRE_NODE_IDENTIFIER" << endl
-                        << "Value: " << resumedATResponse.s_value << endl;
+                                sem_t response_available;
+                                sem_init(&response_available, 0, 0);
+                                sem_post(&response_available);
+                                commandsResponse_buffer_[at_response->getFrameId()] = make_pair(response_available, resumedATResponse);
+                            }
+                            else{
+                                it->second.second = resumedATResponse;
+                                sem_post(&(it->second.first));
+                            }
+                        }
+                        unlock();
+
+                        /*cout << "DEBUG: Received response: ADDR_CRE_NODE_IDENTIFIER" << endl
+                        << "Value: " << resumedATResponse.s_value << endl;*/
                     }
 
                     break;
@@ -790,7 +908,26 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
                         resumedATResponse.parameterValueType = STRING;
                         resumedATResponse.s_value = at_response->getParameterValue();
 
-                        commandsResponse_buffer_[at_response->getFrameId()] = resumedATResponse;
+                        lock();
+                        {
+                            map<unsigned char, pair<sem_t, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
+                            if(it == commandsResponse_buffer_.end()){
+
+                                sem_t response_available;
+                                sem_init(&response_available, 0, 0);
+                                sem_post(&response_available);
+                                commandsResponse_buffer_[at_response->getFrameId()] = make_pair(response_available, resumedATResponse);
+                            }
+                            else{
+
+                                it->second.second = resumedATResponse;
+                                sem_post(&(it->second.first));
+                            }
+
+                        }
+                        unlock();
+
+
                     }
 
                     break;
@@ -814,7 +951,24 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
                         resumedATResponse.parameterValueType = STRING;
                         resumedATResponse.s_value = at_response->getParameterValue();
 
-                        commandsResponse_buffer_[at_response->getFrameId()] = resumedATResponse;
+                        lock();
+                        {
+                            map<unsigned char, pair<sem_t, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
+                            if(it == commandsResponse_buffer_.end()){
+
+                                sem_t response_available;
+                                sem_init(&response_available, 0, 0);
+                                sem_post(&response_available);
+                                commandsResponse_buffer_[at_response->getFrameId()] = make_pair(response_available, resumedATResponse);
+                            }
+                            else{
+
+                                it->second.second = resumedATResponse;
+                                sem_post(&(it->second.first));
+                            }
+
+                        }
+                        unlock();
                     }
 
                     break;
@@ -847,10 +1001,27 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
                         resumedATResponse.parameterValueType = STRING;
                         resumedATResponse.s_value = at_response->getParameterValue();
 
-                        commandsResponse_buffer_[at_response->getFrameId()] = resumedATResponse;
+                        lock();
+                        {
+                            map<unsigned char, pair<sem_t, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
+                            if(it == commandsResponse_buffer_.end()){
 
-                        cout << "DEBUG: Received response: ADDR_CRE_NODE_IDENTIFIER" << endl
-                        << "Value: " << resumedATResponse.s_value << endl;
+                                sem_t response_available;
+                                sem_init(&response_available, 0, 0);
+                                sem_post(&response_available);
+                                commandsResponse_buffer_[at_response->getFrameId()] = make_pair(response_available, resumedATResponse);
+                            }
+                            else{
+
+                                it->second.second = resumedATResponse;
+                                sem_post(&(it->second.first));
+                            }
+
+                        }
+                        unlock();
+
+                        /*cout << "DEBUG: Received response: ADDR_CRE_NODE_IDENTIFIER" << endl
+                        << "Value: " << resumedATResponse.s_value << endl;*/
                     }
 
                     break;
