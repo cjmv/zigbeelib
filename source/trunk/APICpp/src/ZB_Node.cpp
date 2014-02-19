@@ -16,7 +16,14 @@ using namespace std;
 // Default constructor
 ZB_Node::ZB_Node()
 {
-    //ctor
+    networkAddr_ = "";
+    serialNumberHigh_ = "";
+    serialNumberLow_ = "";
+    nodeIdent_ = "";
+    parentNetworkAddr_ = "";
+    status_ = '\0';
+    profileIdent_ = "";
+    manufacturerIdent_ = "";
 }
 
 // AT response parameter constructor
