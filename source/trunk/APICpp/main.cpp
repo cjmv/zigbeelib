@@ -628,7 +628,7 @@ void useMC()
             }
             else if (string(option).find("IR") != string::npos){
 
-                mc->setIOSampleRate("ROUTER", 10000);
+                mc->setIOSampleRate("TEMPERATURE", 60000);
             }
             else if(string(option).find("getNI") != string::npos){
 
@@ -655,7 +655,7 @@ void useMC()
         else if (string(option).find("write") != string::npos)
 
             // Writing changes to router.
-            mc->writeChanges("ROUTER");
+            mc->writeChanges("TEMPERATURE");
 
         else if (string(option). find("high") != string::npos)
         {

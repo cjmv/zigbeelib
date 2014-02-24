@@ -105,6 +105,7 @@ bool ZB_MonitoringAndControl::retrieveCommandsResponseBuffer(unsigned char frame
         it = commandsResponse_buffer_.find(frameID);
         if(it != commandsResponse_buffer_.end()){
 
+            cout << "DEBUG -> Requesting for a already registered response..." << endl;
             //sem_timedwait(&available_samples_, &timeout);
             response_available = it->second.first;
             /*commandResponse = it->second.second;
@@ -113,12 +114,13 @@ bool ZB_MonitoringAndControl::retrieveCommandsResponseBuffer(unsigned char frame
         }
         else{
 
+            cout << "DEBUG -> Requesting for a NOT registered response..." << endl;
             Resumed_AT_Response response;
             response.commandStatus = API_AT_CommandResponse::UNKOWN_STATUS;
             response.parameterValueType = NO_TYPE;
 
             sem_init(&response_available, 0, 0);
-            commandsResponse_buffer_[frameId_] = make_pair(response_available, response);
+            commandsResponse_buffer_[frameID] = make_pair(response_available, response);
         }
     }
     unlock();
@@ -500,11 +502,11 @@ void ZB_MonitoringAndControl::job()
         txrx_->accessMessagePool(message);
 
         if(message.compare("") != 0){
-            //cout << "DEBUG: Message received: ";
-            /*for(unsigned int x = 0; x < message.length(); x++){
+            cout << "DEBUG: Message received: ";
+            for(unsigned int x = 0; x < message.length(); x++){
                 cout << hex << (int)(unsigned char)message[x] << " ";
-            }*/
-            //cout << endl;
+            }
+            cout << endl;
             switch((unsigned char)message[3])
             {
 
@@ -731,7 +733,7 @@ void ZB_MonitoringAndControl::job()
 void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_response)
 {
     bool processInternally = false;
-    string *generatedString;
+    string *generatedString = 0;
 
     // Check if the AT response received is to be processed internally or not.
     for (unsigned int i = 0; i < internalAT_frameID_vector_.size(); i++){
@@ -848,6 +850,33 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
                     }
 
                     break;
+                }
+
+                case API_AT_CommandResponse::IO_CRE_AD0:
+                {
+                    Resumed_AT_Response resumedATResponse;
+                    resumedATResponse.commandStatus = API_AT_CommandResponse::CommandStatus(at_response->getCommandStatus());
+                    resumedATResponse.parameterValueType = UNSIGNED_INT;
+                    resumedATResponse.s_value = at_response->getParameterValue();
+
+                    lock();
+                    {
+                        map<unsigned char, pair<sem_t, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
+                        if(it == commandsResponse_buffer_.end()){
+
+                            cout << "DEBUG -> Received a reponse message NOT registered..." << endl;
+                            sem_t response_available;
+                            sem_init(&response_available, 0, 0);
+                            sem_post(&response_available);
+                            commandsResponse_buffer_[at_response->getFrameId()] = make_pair(response_available, resumedATResponse);
+                        }
+                        else{
+                            cout << "DEBUG -> Received a response registered message..." << endl;
+                            it->second.second = resumedATResponse;
+                            sem_post(&(it->second.first));
+                        }
+                    }
+                    unlock();
                 }
 
                 default:
