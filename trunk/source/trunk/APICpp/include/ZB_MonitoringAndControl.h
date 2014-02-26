@@ -433,14 +433,11 @@ class ZB_MonitoringAndControl: public Thread
 
         std::vector<ZB_Node*> nodeList_; //!< A vector of pointers of ZB_Nodes. This vector shall be use to maintain a list of all active network nodes.
 
-        std::map<unsigned char, std::pair<sem_t, Resumed_AT_Response> > commandsResponse_buffer_; /**< A STL map holding the unseen commands responses.
+        std::map<unsigned char, std::pair<sem_t*, Resumed_AT_Response> > commandsResponse_buffer_; /**< A STL map holding the unseen commands responses.
                                                                                                         * This map key is the an unsigned char representing the frame ID to which the AT response refers to.
-                                                                                                        * The object is a pair composed by the CommandStatus enumerated type (holding the respective command status)
-                                                                                                        * and a STL string for those cases where the AT command returns a given node registry value.
-                                                                                                        * In special cases this string value is actually parsed into a specialized structure as it is for the AT ND
-                                                                                                        * command case.
-                                                                                                        * \sa ZB_Node
-                                                                                                        * \sa nodeList_
+                                                                                                        * The object is a pair composed by semaphore pointer indicating the presence of the response related to the frame ID
+                                                                                                        * and the Resumed_AT_Response type holding resumed information concerning the response.
+                                                                                                        * \sa Resumed_AT_Response
                                                                                                         */
 
         std::queue<API_Receive_Packet*> rx_sample_queue_; //!< A STL queue holds the queue of unprocessed samples represented by an API_Receive_Packet object.

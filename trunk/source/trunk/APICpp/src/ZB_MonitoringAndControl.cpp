@@ -91,8 +91,8 @@ bool ZB_MonitoringAndControl::retrieveCommandsResponseBuffer(unsigned char frame
 {
     bool found = false;
     timespec timeout;
-    sem_t response_available;
-    map<unsigned char, pair<sem_t,Resumed_AT_Response> >::iterator it;
+    sem_t *response_available = 0;
+    map<unsigned char, pair<sem_t*,Resumed_AT_Response> >::iterator it;
 
     clock_gettime(CLOCK_REALTIME, &timeout);
 
@@ -119,14 +119,15 @@ bool ZB_MonitoringAndControl::retrieveCommandsResponseBuffer(unsigned char frame
             response.commandStatus = API_AT_CommandResponse::UNKOWN_STATUS;
             response.parameterValueType = NO_TYPE;
 
-            sem_init(&response_available, 0, 0);
+            response_available = new sem_t;
+            sem_init(response_available, 0, 0);
             commandsResponse_buffer_[frameID] = make_pair(response_available, response);
         }
     }
     unlock();
 
     // wait for semaphore.
-    sem_timedwait(&response_available, &timeout);
+    sem_timedwait(response_available, &timeout);
     lock();
     {
         it = commandsResponse_buffer_.find(frameID);
@@ -134,7 +135,7 @@ bool ZB_MonitoringAndControl::retrieveCommandsResponseBuffer(unsigned char frame
                                                     it->second.second.parameterValueType != NO_TYPE)){
 
             commandResponse = it->second.second;
-            sem_destroy(&response_available);
+            sem_destroy(response_available);
             commandsResponse_buffer_.erase(it);
             found = true;
         }
@@ -774,18 +775,17 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
 
                     lock();
                     {
-                        map<unsigned char, pair<sem_t, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
+                        map<unsigned char, pair<sem_t*, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
                         if(it == commandsResponse_buffer_.end()){
 
-                            sem_t response_available;
-                            sem_init(&response_available, 0, 0);
-                            sem_post(&response_available);
+                            sem_t *response_available = new sem_t;
+                            sem_init(response_available, 0, 1);
                             commandsResponse_buffer_[at_response->getFrameId()] = make_pair(response_available, resumedATResponse);
                         }
                         else{
 
                             it->second.second = resumedATResponse;
-                            sem_post(&(it->second.first));
+                            sem_post(it->second.first);
                         }
 
                     }
@@ -830,17 +830,16 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
 
                         lock();
                         {
-                            map<unsigned char, pair<sem_t, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
+                            map<unsigned char, pair<sem_t*, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
                             if(it == commandsResponse_buffer_.end()){
 
-                                sem_t response_available;
-                                sem_init(&response_available, 0, 0);
-                                sem_post(&response_available);
+                                sem_t *response_available = new sem_t;
+                                sem_init(response_available, 0, 1);
                                 commandsResponse_buffer_[at_response->getFrameId()] = make_pair(response_available, resumedATResponse);
                             }
                             else{
                                 it->second.second = resumedATResponse;
-                                sem_post(&(it->second.first));
+                                sem_post(it->second.first);
                             }
                         }
                         unlock();
@@ -861,19 +860,18 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
 
                     lock();
                     {
-                        map<unsigned char, pair<sem_t, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
+                        map<unsigned char, pair<sem_t*, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
                         if(it == commandsResponse_buffer_.end()){
 
                             cout << "DEBUG -> Received a reponse message NOT registered..." << endl;
-                            sem_t response_available;
-                            sem_init(&response_available, 0, 0);
-                            sem_post(&response_available);
+                            sem_t *response_available = new sem_t;
+                            sem_init(response_available, 0, 1);
                             commandsResponse_buffer_[at_response->getFrameId()] = make_pair(response_available, resumedATResponse);
                         }
                         else{
                             cout << "DEBUG -> Received a response registered message..." << endl;
                             it->second.second = resumedATResponse;
-                            sem_post(&(it->second.first));
+                            sem_post(it->second.first);
                         }
                     }
                     unlock();
@@ -939,18 +937,17 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
 
                         lock();
                         {
-                            map<unsigned char, pair<sem_t, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
+                            map<unsigned char, pair<sem_t*, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
                             if(it == commandsResponse_buffer_.end()){
 
-                                sem_t response_available;
-                                sem_init(&response_available, 0, 0);
-                                sem_post(&response_available);
+                                sem_t *response_available = new sem_t;
+                                sem_init(response_available, 0, 1);
                                 commandsResponse_buffer_[at_response->getFrameId()] = make_pair(response_available, resumedATResponse);
                             }
                             else{
 
                                 it->second.second = resumedATResponse;
-                                sem_post(&(it->second.first));
+                                sem_post(it->second.first);
                             }
 
                         }
@@ -982,18 +979,17 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
 
                         lock();
                         {
-                            map<unsigned char, pair<sem_t, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
+                            map<unsigned char, pair<sem_t*, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
                             if(it == commandsResponse_buffer_.end()){
 
-                                sem_t response_available;
-                                sem_init(&response_available, 0, 0);
-                                sem_post(&response_available);
+                                sem_t *response_available = new sem_t;
+                                sem_init(response_available, 0, 1);
                                 commandsResponse_buffer_[at_response->getFrameId()] = make_pair(response_available, resumedATResponse);
                             }
                             else{
 
                                 it->second.second = resumedATResponse;
-                                sem_post(&(it->second.first));
+                                sem_post(it->second.first);
                             }
 
                         }
@@ -1032,18 +1028,17 @@ void ZB_MonitoringAndControl::processATCommandStatus(API_AT_CommandResponse* at_
 
                         lock();
                         {
-                            map<unsigned char, pair<sem_t, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
+                            map<unsigned char, pair<sem_t*, Resumed_AT_Response> >::iterator it = commandsResponse_buffer_.find(at_response->getFrameId());
                             if(it == commandsResponse_buffer_.end()){
 
-                                sem_t response_available;
-                                sem_init(&response_available, 0, 0);
-                                sem_post(&response_available);
+                                sem_t *response_available = new sem_t;
+                                sem_init(response_available, 0, 1);
                                 commandsResponse_buffer_[at_response->getFrameId()] = make_pair(response_available, resumedATResponse);
                             }
                             else{
 
                                 it->second.second = resumedATResponse;
-                                sem_post(&(it->second.first));
+                                sem_post(it->second.first);
                             }
 
                         }
