@@ -1086,7 +1086,7 @@ unsigned char ZB_MonitoringAndControl::incrementFrameID()
 }
 
 // int2Hex method
-string ZB_MonitoringAndControl::int2Hex(unsigned int number)
+string ZB_MonitoringAndControl::int2Hex(unsigned long number)
 {
     string hexNumber = "", aux = "";
 
@@ -1209,9 +1209,32 @@ bool ZB_MonitoringAndControl::setRemoteAddressing(API_AT_RemoteCommand* remoteCo
     unlock();
 
     // If current node ins't yet on the node list, use only the (valid?) network address
-    if (!set && nodeIdent.size() == 2 && address.size() == 8){
-        remoteCommand->setDestinationAddress(address);
-        remoteCommand->setDestinationNetworkAddress(nodeIdent);
+    if (!set){
+
+        cout << "DEBUG: No node list in place yet using parameterized addresses..." << flush;
+
+        if(nodeIdent.size() == 2){
+            cout << "(local)" << endl;
+            remoteCommand->setDestinationNetworkAddress(nodeIdent);
+        }
+        else{
+            cout << "(local default)" << endl;
+            remoteCommand->setDestinationNetworkAddress(int2Hex(0xFFFE));
+        }
+
+        if(address.size() == 8){
+            cout << "(serial)" << endl;
+            remoteCommand->setDestinationNetworkAddress(address);
+        }
+        else{
+            string missing_bytes = "";
+            cout << "(serial default)" << endl;
+            while(missing_bytes.size() < 6){
+                missing_bytes += (char)0;
+            }
+            remoteCommand->setDestinationAddress(missing_bytes + int2Hex(0x000000000000FFFF));
+        }
+
         set = true;
     }
 
