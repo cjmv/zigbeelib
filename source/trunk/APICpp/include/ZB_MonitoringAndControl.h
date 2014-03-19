@@ -339,11 +339,11 @@ class ZB_MonitoringAndControl: public Thread
         void stopMonitoring();
 
         /** This method purpose is to convert an integer number to a hexadecimal one (separated in bytes).
-         * \param number An unsigned integer holding the value to be converted.
+         * \param number An unsigned long integer holding the value to be converted.
          * \return A STL string holding the converted number into a set of bytes.
          * \todo This type of routines should be contained in a Utils class accessible by all the project.
          */
-        std::string int2Hex(unsigned int number);
+        static std::string int2Hex(unsigned long number);
 
         /** This method purpose is to update the Network Node List with a new given Node. This means that
          * the provided node will be added or simply updated (if its settings have been changed) on the current Node List.
