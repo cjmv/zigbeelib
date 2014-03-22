@@ -436,8 +436,10 @@ unsigned char ZB_MonitoringAndControl::sendATCommand(string networkAddr,
                 //txrx_->sendMessage(at_remoteCommand->getFrame());
                 txrx_->sendMessage(*generatedFrame);
             }
-            else
+            else{
+                cout << "DEBUG: Generated frame for sending command has " << at_remoteCommand->getFrame().size() << " bytes." << endl;
                 txrx_->sendMessage(at_remoteCommand->getFrame());
+            }
 
             delete at_remoteCommand;
         }
@@ -1211,28 +1213,25 @@ bool ZB_MonitoringAndControl::setRemoteAddressing(API_AT_RemoteCommand* remoteCo
     // If current node ins't yet on the node list, use only the (valid?) network address
     if (!set){
 
-        cout << "DEBUG: No node list in place yet using parameterized addresses..." << flush;
-
         if(nodeIdent.size() == 2){
-            cout << "(local)" << endl;
+
             remoteCommand->setDestinationNetworkAddress(nodeIdent);
         }
         else{
-            cout << "(local default)" << endl;
-            remoteCommand->setDestinationNetworkAddress(int2Hex(0xFFFE));
+
+            remoteCommand->setDestinationNetworkAddress(int2Hex((unsigned int)0xfffe));
         }
 
         if(address.size() == 8){
-            cout << "(serial)" << endl;
-            remoteCommand->setDestinationNetworkAddress(address);
+
+            remoteCommand->setDestinationAddress(address);
         }
         else{
             string missing_bytes = "";
-            cout << "(serial default)" << endl;
             while(missing_bytes.size() < 6){
                 missing_bytes += (char)0;
             }
-            remoteCommand->setDestinationAddress(missing_bytes + int2Hex(0x000000000000FFFF));
+            remoteCommand->setDestinationAddress(missing_bytes + int2Hex((unsigned long)0x000000000000ffff));
         }
 
         set = true;
