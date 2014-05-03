@@ -640,7 +640,7 @@ void ZB_MonitoringAndControl::job()
 
                             for(unsigned int i = 0; i < nodeList_.size(); i++){
 
-                                if(nodeList_[i]->getNetworkAddr().compare(io_sample->getSourceNetworkAddress()) == 0){
+                                if(string(nodeList_[i]->getSerialNumberHigh() + nodeList_[i]->getSerialNumberLow()).compare(io_sample->getSourceAddress()) == 0){
 
                                     newNodeFound = false;
                                     lock();
